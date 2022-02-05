@@ -16,7 +16,7 @@
 #define DUMP(image) \
     auto filepath##image = output / (std::string{#image} + ".png");     \
     cv::imwrite(filepath##image, image); \
-    LOG_INFO << "Dump skel image to " << std::filesystem::absolute(filepath##image);
+    LOG_INFO << "Dump " << #image << " to " << std::filesystem::absolute(filepath##image);
 
 enum class PixelType {
     EMPTY,
@@ -85,6 +85,10 @@ public:
         return false;
     }
 
+    size_t Size() const {
+        return size_;
+    }
+
 public:
     class Iterator {
     public:
@@ -117,10 +121,10 @@ StackVector<cv::Point, 8> Get8Neighborhood(const cv::Mat& image, const cv::Point
     std::array<cv::Point, 8> allNeighbours {
             cv::Point{pixel.x - 1, pixel.y},
             cv::Point{pixel.x, pixel.y - 1},
-            cv::Point{pixel.x - 1, pixel.y - 1},
-            cv::Point{pixel.x + 1, pixel.y},
-            cv::Point{pixel.x + 1, pixel.y + 1},
             cv::Point{pixel.x, pixel.y + 1},
+            cv::Point{pixel.x + 1, pixel.y},
+            cv::Point{pixel.x - 1, pixel.y - 1},
+            cv::Point{pixel.x + 1, pixel.y + 1},
             cv::Point{pixel.x + 1, pixel.y - 1},
             cv::Point{pixel.x - 1, pixel.y + 1}
     };
@@ -156,7 +160,6 @@ public:
 
         auto allNeighbours = Get8Neighborhood(*image_, current);
         if (!allNeighbours.Contains(prev_) && current != prev_) {
-            LOG_DEBUG << "Found crossing point " << current;
             image_->at<uchar>(current) = static_cast<uchar>(PixelType::CROSSING);
             *pointForNextCrawler = current;
             return false;
@@ -224,22 +227,41 @@ public:
         }
     }
 
+    void OptimizeCrossings() {
+        LOG_INFO << "Optimize crossing points, initial size = " << crossings_.size();
+
+        std::unordered_set<cv::Point> crossingsCopy = crossings_;
+        for (const cv::Point& crossing : crossingsCopy) {
+            image_->at<uchar>(crossing) = static_cast<uchar>(PixelType::EDGE);
+            if (!crossings_.contains(crossing)) {
+                continue;
+            }
+
+            OptimizeCrossing(crossing);
+        }
+
+        for (const cv::Point& crossing : crossings_) {
+            image_->at<uchar>(crossing) = static_cast<uchar>(PixelType::CROSSING);
+        }
+
+        LOG_INFO << "Crossing points optimized, actual crossings cnt = " << crossings_.size();
+    }
+
 private:
     std::unordered_set<cv::Point> used_;
     std::queue<GraphCrawler> crawlers_;
     cv::Mat* image_;
+    std::unordered_set<cv::Point> crossings_;
 
 private:
     void TryAddCrawler() {
-        for (int row = 0; row < image_->rows; ++row) {
-            for (int col = 0; col < image_->cols; ++col) {
-                cv::Point point{row, col};
-                PixelType type = static_cast<PixelType>(image_->at<uchar>(point));
-                if (type == PixelType::VERTEX) {
+        for (int y = 0; y < image_->rows; ++y) {
+            for (int x = 0; x < image_->cols; ++x) {
+                cv::Point point{x, y};
+                if (GetPointType(point) == PixelType::VERTEX) {
                     for (const cv::Point& neighbour : Get8Neighborhood(*image_, point)) {
-                        PixelType ntype = static_cast<PixelType>(image_->at<uchar>(neighbour));
-                        if (ntype == PixelType::UNKNOWN) {
-                            LOG_DEBUG << "Add explicitly crawler with start point " << point;
+                        if (GetPointType(neighbour) == PixelType::UNKNOWN) {
+                            LOG_DEBUG << "Explicitly add crawler with start point " << point;
 
                             crawlers_.push(GraphCrawler(image_, &used_, point));
                             return;
@@ -248,16 +270,49 @@ private:
                 }
             }
         }
+
+        LOG_DEBUG << "No new crawlers found, exit";
     }
 
     void RunCrawler(GraphCrawler* crawler) {
         while (!crawler->Empty()) {
-            cv::Point startPointForNextCrawler;
-            if (!crawler->Step(&startPointForNextCrawler)) {
-                LOG_DEBUG << "Add new crawler with start point " << startPointForNextCrawler;
-                crawlers_.push(GraphCrawler(image_, &used_, startPointForNextCrawler));
+            cv::Point crossingPoint;
+            if (!crawler->Step(&crossingPoint)) {
+                LOG_DEBUG << "Found crossing point " << crossingPoint;
+                LOG_DEBUG << "Add new crawler with start point " << crossingPoint;
+                crossings_.insert(crossingPoint);
+                crawlers_.push(GraphCrawler(image_, &used_, crossingPoint));
             }
         }
+    }
+
+    void OptimizeCrossing(const cv::Point& crossing) {
+        StackVector<cv::Point, 8> localCrossings;
+        crossings_.erase(crossing);
+        for (const cv::Point& neighbour : Get8Neighborhood(*image_, crossing)) {
+            if (GetPointType(neighbour) == PixelType::CROSSING) {
+                crossings_.erase(neighbour);
+                localCrossings.PushBack(neighbour);
+            }
+        }
+
+        cv::Point pointWithMaxNeighbours = crossing;
+        size_t maxNeighboursCnt = 0;
+        for (const cv::Point& crossingPoint : localCrossings) {
+            for (const cv::Point& neighbour : Get8Neighborhood(*image_, crossingPoint)) {
+                const auto neighbours = Get8Neighborhood(*image_, neighbour);
+                if (neighbours.Size() > maxNeighboursCnt) {
+                    maxNeighboursCnt = neighbours.Size();
+                    pointWithMaxNeighbours = neighbour;
+                }
+            }
+        }
+
+        crossings_.insert(pointWithMaxNeighbours);
+    }
+
+    PixelType GetPointType(const cv::Point& point) const {
+        return static_cast<PixelType>(image_->at<uchar>(point));
     }
 };
 
@@ -349,7 +404,7 @@ int main() {
     std::filesystem::path input("images");
     std::filesystem::path output("output");
 
-    std::filesystem::path imgPath = input / "sample.jpeg";
+    std::filesystem::path imgPath = input / "sample1.jpeg";
     assert(std::filesystem::exists(imgPath));
 
     LOG_INFO << "Read input image: " << imgPath;
@@ -359,18 +414,20 @@ int main() {
     cv::Mat coloredImage;
     coloredImage = cv::imread(imgPath, cv::ImreadModes::IMREAD_COLOR);
 
-    cv::Mat skel = GetReducedImage(sourceImage);
-    DUMP(skel);
+    cv::Mat skeleton = GetReducedImage(sourceImage);
+    DUMP(skeleton);
 
-    cv::Mat vertexesMask = GetVertexesMask(coloredImage);
+    cv::Mat vertexesMask = GetVertexesMask(coloredImage, {0, 0, 0}, 100.);
 
-    cv::Mat typedSkel = MarkPixels(skel, vertexesMask, PixelType::VERTEX);
+    cv::Mat typedSkel = MarkPixels(skeleton, vertexesMask, PixelType::VERTEX);
 
+    LOG_INFO << "Run pixels classifier";
     PixelClassifier classifier(&typedSkel);
     classifier.Run();
+    classifier.OptimizeCrossings();
 
-    cv::Mat coloredSkel = ColorizeTypedPixels(typedSkel);
-    DUMP(coloredSkel);
+    cv::Mat pixelsRecognition = ColorizeTypedPixels(typedSkel);
+    DUMP(pixelsRecognition);
 
     return 0;
 }
