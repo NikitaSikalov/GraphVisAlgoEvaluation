@@ -13,3 +13,6 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output/)
 
 add_executable(main main.cpp)
 target_link_libraries(main ${OpenCV_LIBS})
+
+add_executable(dev dev.cpp)
+target_link_libraries(dev ${OpenCV_LIBS})

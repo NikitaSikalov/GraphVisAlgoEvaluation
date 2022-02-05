@@ -9,9 +9,114 @@
 #include <filesystem>
 #include <string>
 
-
 #define DUMP(image) \
-    cv::imwrite(output / (std::string{#image} + ".jpeg"), image)
+    auto filepath##image = output / (std::string{#image} + ".jpeg");     \
+    cv::imwrite(filepath##image, image); \
+    LOG_INFO << "Dump skel image to " << std::filesystem::absolute(filepath##image);
+
+enum class PixelType {
+    EMPTY,
+    UNKNOWN,
+    VERTEX,
+    EDGE,
+    PORTAL,
+    CROSSING,
+
+    MAX
+};
+
+const cv::Scalar colorsPalette[] = {
+        CV_RGB(0,0, 0),
+        CV_RGB(255, 255, 255),
+        CV_RGB(255, 0, 0),
+        CV_RGB(0, 0, 255),
+        CV_RGB(112, 48, 162),
+        CV_RGB(1, 112, 193),
+        CV_RGB(255, 102, 0),
+        CV_RGB(255, 255, 1),
+        CV_RGB(0, 175, 82),
+};
+
+double Distance(const cv::Vec3b& pixel1, const cv::Vec3b& pixel2) {
+    double res = 0;
+    constexpr size_t rgb_channels = 3;
+
+    for (int i = 0; i < rgb_channels; ++i) {
+        double x = static_cast<double>(pixel1[i]) - pixel2[i];
+        res += x * x;
+    }
+
+    return sqrt(res);
+}
+
+cv::Mat GetVertexesMask(const cv::Mat& sourceImage, const cv::Vec3b& vertexColor = {0, 0, 0}, double threshold = 80.0) {
+    cv::Mat vertexesMask(sourceImage.size(), CV_8UC1);
+
+    for (int row = 0; row < sourceImage.rows; ++row) {
+        for (int col = 0; col < sourceImage.cols; ++col) {
+            const auto& pixel = sourceImage.at<cv::Vec3b>(row, col);
+
+            if (Distance(pixel, vertexColor) <= threshold) {
+                vertexesMask.at<uchar>(row, col) = 1;
+            } else {
+                vertexesMask.at<uchar>(row, col) = 0;
+            }
+        }
+    }
+
+    return vertexesMask;
+}
+
+cv::Mat GetReducedImage(const cv::Mat& sourceImage) {
+    cv::Mat blurredImage;
+    cv::GaussianBlur(sourceImage, blurredImage, {5, 5}, 0);
+
+    cv::Mat binaryImage;
+    cv::threshold(blurredImage, binaryImage, 250, 255, cv::THRESH_BINARY_INV);
+
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_CROSS, {5, 5});
+    cv::Mat preprocessedImage;
+    morphologyEx(binaryImage, preprocessedImage, cv::MORPH_OPEN, kernel);
+
+    cv::Mat skel;
+    cv::ximgproc::thinning(preprocessedImage, skel);
+
+    return skel;
+}
+
+cv::Mat MarkPixels(const cv::Mat& image, const cv::Mat& mask, PixelType type) {
+    cv::Mat output;
+    image.copyTo(output);
+
+    for (int row = 0; row < image.rows; ++row) {
+        for (int col = 0; col < image.cols; ++col) {
+            uchar& outputValue = output.at<uchar>(row, col);
+            if (mask.at<uchar>(row, col) && image.at<uchar>(row, col)) {
+                outputValue = static_cast<uchar>(type);
+            }
+            if (outputValue >= static_cast<uchar>(PixelType::MAX)) {
+                outputValue = static_cast<uchar>(PixelType::UNKNOWN);
+            }
+        }
+    }
+
+    return output;
+}
+
+cv::Mat ColorizeTypedPixels(const cv::Mat& image) {
+    cv::Mat output(image.size(), CV_64FC4);
+
+    for (int row = 0; row < image.rows; ++row) {
+        for (int col = 0; col < image.cols; ++col) {
+            const uchar ptype = image.at<uchar>(row, col);
+            assert(ptype < static_cast<uchar>(PixelType::MAX));
+
+            output.at<cv::Scalar>(row, col) = colorsPalette[ptype];
+        }
+    }
+
+    return output;
+}
 
 int main() {
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
@@ -20,43 +125,24 @@ int main() {
     std::filesystem::path input("images");
     std::filesystem::path output("output");
 
-    std::filesystem::path input_image = input / "sample.jpeg";
+    std::filesystem::path imgPath = input / "sample.jpeg";
+    assert(std::filesystem::exists(imgPath));
 
-    LOG_INFO << "Read input image: " << input_image;
+    LOG_INFO << "Read input image: " << imgPath;
 
-    cv::Mat image;
-    image = cv::imread(input_image, cv::ImreadModes::IMREAD_GRAYSCALE);
-    assert(!image.empty());
+    cv::Mat sourceImage;
+    sourceImage = cv::imread(imgPath, cv::ImreadModes::IMREAD_GRAYSCALE);
+    cv::Mat coloredImage;
+    coloredImage = cv::imread(imgPath, cv::ImreadModes::IMREAD_COLOR);
 
-    LOG_INFO << "Preprocess image";
-
-    LOG_INFO << "Apply gaussian blur";
-
-    cv::Mat blurred_image;
-    cv::GaussianBlur(image, blurred_image, {5, 5}, 0);
-    DUMP(blurred_image);
-
-    LOG_INFO << "Apply binarization to image";
-
-    cv::Mat binary_image;
-    cv::threshold(blurred_image, binary_image, 250, 255, cv::THRESH_BINARY_INV);
-    DUMP(binary_image);
-
-    LOG_INFO << "Remove some salt from image";
-
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_CROSS, {5, 5});
-    cv::Mat preprocessed_image;
-    morphologyEx(binary_image, preprocessed_image, cv::MORPH_OPEN, kernel);
-    DUMP(preprocessed_image);
-
-    LOG_INFO << "Image successfully preprocessed";
-
-    cv::Mat skel;
-    cv::ximgproc::thinning(preprocessed_image, skel);
+    cv::Mat skel = GetReducedImage(sourceImage);
     DUMP(skel);
 
-    LOG_INFO << "Skeletonization successfully applied";
-    LOG_INFO << "See result in " << std::filesystem::absolute(output / "skel.jpeg");
+    cv::Mat vertexesMask = GetVertexesMask(coloredImage);
+
+    cv::Mat typedSkel = MarkPixels(skel, vertexesMask, PixelType::VERTEX);
+    cv::Mat coloredSkel = ColorizeTypedPixels(typedSkel);
+    DUMP(coloredSkel);
 
     return 0;
 }

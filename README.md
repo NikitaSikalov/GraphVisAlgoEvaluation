@@ -5,12 +5,20 @@
 1. [Metrics for Graph Drawing Aesthetics](https://www.researchgate.net/publication/222546202_Metrics_for_Graph_Drawing_Aesthetics)
 2. [Optical Graph Recognition](https://www.researchgate.net/publication/232651643_Optical_Graph_Recognition)
 
+### Work Steps
+
+1. Image skeletonization ([A Sequential Thinning Algorithm For MultiDimensional Binary Patterns](https://arxiv.org/pdf/1710.03025.pdf))
+See [sample](./images/sample.jpeg) and [thinning image](./cv_results/sample_skel.jpeg). 
+   
+2. Pixels classification [classified pixels](./cv_results/colored_skel.jpeg). (Now only vertex pixels).
+Vertex pixels classified by color from source image.
+
 ## Usage
 
 ### Dependencies
 
 1. [OpenCV](https://opencv.org/) –– open source CV library
-2. [plog](./plog) –– lightweight logging library
+2. [plog](https://github.com/SergiusTheBest/plog) –– lightweight logging library
 
 ### Git submodules initialization
 ```
