@@ -24,7 +24,6 @@ enum class PixelType {
     VERTEX,
     EDGE,
     CROSSING,
-    PORTAL,
 
     MAX
 };
@@ -397,14 +396,18 @@ cv::Mat ColorizeTypedPixels(const cv::Mat& image) {
     return output;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
     plog::init(plog::verbose, &consoleAppender);
 
-    std::filesystem::path input("images");
-    std::filesystem::path output("output");
+    std::filesystem::path input(argv[1]);
+    std::filesystem::path output(argv[2]);
+    output /= "sample5";
+    if (!std::filesystem::exists(output)) {
+        std::filesystem::create_directory(output);
+    }
 
-    std::filesystem::path imgPath = input / "sample1.jpeg";
+    std::filesystem::path imgPath = input / "fdeb5.png";
     assert(std::filesystem::exists(imgPath));
 
     LOG_INFO << "Read input image: " << imgPath;
