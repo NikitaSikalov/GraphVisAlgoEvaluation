@@ -11,6 +11,7 @@ include_directories(plog/include)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/images/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images/)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output/)
 
+add_subdirectory(lib/OpticalGraphRecognition)
 add_executable(main main.cpp)
 target_link_libraries(main ${OpenCV_LIBS})
 
