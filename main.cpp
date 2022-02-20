@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
 
     const std::filesystem::path input_dir(argv[1]);
     const std::filesystem::path output_dir(argv[2]);
-    const std::filesystem::path sample_dir("sample1");
+    const std::filesystem::path sample_dir("sample3");
 
     const std::filesystem::path input_img = input_dir / sample_dir / "bundling.png";
     const std::filesystem::path output_img = output_dir / sample_dir / "classified.png";
