@@ -2,9 +2,8 @@
 
 #include <array>
 #include <initializer_list>
-#include <cassert>
 
-namespace ogr::utils {
+namespace NOgr::NUtils {
     // Stack vector for the poor
     // FIXME: https://chromium.googlesource.com/chromium/chromium/+/master/base/stack_container.h
     template <class TItem, size_t MaxSize>
