@@ -1,4 +1,5 @@
 #include "OpticalGraphRecognition/pixel_classifier.h"
+#include "OpticalGraphRecognition/aesthetic_metrics.h"
 
 #include <plog/Init.h>
 #include <plog/Log.h>
@@ -10,14 +11,17 @@
 
 int main(int argc, char* argv[]) {
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-    plog::init(plog::verbose, &consoleAppender);
+    plog::init(plog::debug, &consoleAppender);
 
     const std::filesystem::path input_dir(argv[1]);
     const std::filesystem::path output_dir(argv[2]);
-    const std::filesystem::path sample_dir("sample3");
+    const std::filesystem::path sample_dir("sample2");
 
-    const std::filesystem::path input_img = input_dir / sample_dir / "bundling.png";
-    const std::filesystem::path output_img = output_dir / sample_dir / "classified.png";
+    const std::string file_name = "bundling";
+    const std::string ext = ".png";
+    const std::filesystem::path input_img = input_dir / sample_dir / (file_name + ext);
+    const std::string result_file_name = file_name + "_ogr_result" + ext;
+    const std::filesystem::path output_img = output_dir / sample_dir / result_file_name;
 
     assert(std::filesystem::exists(input_img));
 
@@ -31,7 +35,13 @@ int main(int argc, char* argv[]) {
     classifier.ClassifyEdgePixels();
 
     const NOgr::OgrMat& classified_image = classifier.GetClassifiedImage();
+
+    NOgr::AestheticMetrics aesthetic_metrics(classified_image);
+    aesthetic_metrics.PreprocessMetrics();
     const cv::Mat colored_classified_image = classified_image.GetColoredImage();
+
+    LOG_INFO << "Vertexes count " << aesthetic_metrics.GetVertexesCount();
+    LOG_INFO << "Edge crossings count " << aesthetic_metrics.GetEdgeCrossingsCount();
 
     LOG_INFO << "Dump image to: " << output_img;
 

@@ -3,6 +3,8 @@
 #include "stack_vector.h"
 #include "inc.h"
 
+#include <plog/Log.h>
+
 #include <queue>
 #include <unordered_set>
 
@@ -73,35 +75,20 @@ namespace NOgr {
 
         class Iterator {
         public:
-            explicit Iterator(const OgrMat &mat, const cv::Point &start = {0, 0}) : mat_(mat) {
-                bfs_queue_.push(start);
-                used_.insert(start);
-            }
+            explicit Iterator(const OgrMat &mat);
 
-            [[nodiscard]] bool IsEnd() const {
-                return bfs_queue_.empty();
-            }
-
-            cv::Point Next() {
-                assert(!IsEnd());
-
-                cv::Point result = bfs_queue_.front();
-                bfs_queue_.pop();
-                for (cv::Point &p : mat_.Get4Neighbourhood(result)) {
-                    if (used_.contains(p)) {
-                        continue;
-                    }
-                    bfs_queue_.push(p);
-                    used_.insert(p);
-                }
-
-                return result;
-            }
+            [[nodiscard]] bool IsEnd() const;
+            cv::Point Next();
 
         private:
             const OgrMat &mat_;
             std::queue<cv::Point> bfs_queue_;
             std::unordered_set<cv::Point> used_;
+            std::unordered_set<cv::Point> start_points_;
+            cv::Point prev_;
+
+        private:
+            void InsertStartPoint();
         };
 
         [[nodiscard]] Iterator GetIterator() const {

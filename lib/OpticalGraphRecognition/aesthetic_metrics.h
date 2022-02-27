@@ -1,9 +1,11 @@
 #pragma once
 
 #include "extended_mat.h"
+#include "disjoint_set.h"
 
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace NOgr {
     struct Stats {
@@ -15,15 +17,17 @@ namespace NOgr {
 
     class AestheticMetrics {
     public:
+        using DisjointSetPtr = std::unique_ptr<NUtils::DisjointSet>;
+    public:
         AestheticMetrics(OgrMat mat) : mat_(std::move(mat)) {};
 
         void PreprocessMetrics();
 
-        size_t GetVertexesCount();
-        size_t GetEdgeCrossingsCount();
-        size_t GetEdgesCount();
+        size_t GetVertexesCount() const;
+        size_t GetEdgeCrossingsCount() const;
+        size_t GetEdgesCount() const;
 
-        double GetIncClutter();
+        double GetIncClutterValue();
         Stats GetEdgeLengthsStats();
         double GetAmbiguityValue();
 
@@ -31,9 +35,10 @@ namespace NOgr {
         OgrMat mat_;
 
     private:
-        std::unordered_map<cv::Point, size_t> vertexes_mapping_;
+        std::unordered_map<cv::Point, DisjointSetPtr> vertexes_mapping_;
         std::vector<cv::Point> edge_crossings_;
-        size_t vertexes_cnt_{0};
+        size_t vertexes_id_counter_{0};
+        size_t not_empty_points_{0};
 
     private:
         void PreprocessPoint(const cv::Point&);

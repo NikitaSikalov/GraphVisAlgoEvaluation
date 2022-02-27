@@ -47,14 +47,18 @@ namespace NOgr::NUtils {
             return false;
         }
 
-        size_t Size() const {
+        [[nodiscard]] size_t Size() const {
             return size_;
+        }
+
+        [[nodiscard]] bool Empty() const {
+            return !size_;
         }
 
     public:
         class Iterator {
         public:
-            Iterator(TItem* pitem) : pitem_(pitem) {}
+            explicit Iterator(TItem* pitem) : pitem_(pitem) {}
 
             Iterator& operator++() {
                 pitem_++;

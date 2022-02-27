@@ -73,6 +73,74 @@ namespace NOgr {
         return result;
     }
 
+    OgrMat::Iterator::Iterator(const OgrMat &mat) : mat_(mat) {
+        for (int row = 0; row < mat_.rows; ++row) {
+            for (int col = 0; col < mat_.cols; ++col) {
+                const cv::Point p{col, row};
+                if (mat_.GetPixelType(p) == PixelType::VERTEX) {
+                    start_points_.insert(p);
+                }
+            }
+        }
+        InsertStartPoint();
+    }
+
+    cv::Point OgrMat::Iterator::Next() {
+        assert(!IsEnd());
+
+        cv::Point result;
+        while (true) {
+            if (bfs_queue_.empty() && !start_points_.empty()) {
+                InsertStartPoint();
+            }
+
+            const cv::Point next = bfs_queue_.front();
+            bfs_queue_.pop();
+
+            const auto neighbours = mat_.Get8Neighbourhood(next);
+            if (neighbours.Contains(prev_) || next == prev_) {
+                result = next;
+                break;
+            }
+
+            start_points_.insert(next);
+            used_.erase(next);
+        }
+
+        const auto next_neighbours = mat_.Get8Neighbourhood(result);
+        assert(next_neighbours.Contains(prev_) || result == prev_);
+        for (const cv::Point &p : next_neighbours) {
+            if (used_.contains(p)) {
+                continue;
+            }
+
+            start_points_.erase(p);
+            bfs_queue_.push(p);
+            used_.insert(p);
+        }
+
+        prev_ = result;
+        return result;
+    }
+
+    bool OgrMat::Iterator::IsEnd() const {
+        return bfs_queue_.empty() && start_points_.empty();
+    }
+
+    void OgrMat::Iterator::InsertStartPoint() {
+        assert(!start_points_.empty());
+        assert(bfs_queue_.empty());
+
+        const cv::Point point = *start_points_.begin();
+        LOG_DEBUG << "Insert new start point to BFS queue " << point;
+
+        assert(!used_.contains(point));
+        bfs_queue_.push(point);
+        prev_ = point;
+        start_points_.erase(point);
+        used_.insert(point);
+    }
+
     const cv::Vec3b OgrMat::kColorsPalette[] = {
             // {Blue, Green, Red}
             cv::Vec3b{0, 0, 0},         // EMPTY
