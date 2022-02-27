@@ -3,3 +3,5 @@ cmake-build*
 .vscode
 dev.cpp
 *.ipynb*
+*/.DS_Store
+.DS_Store
