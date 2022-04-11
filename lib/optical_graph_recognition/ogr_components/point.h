@@ -52,9 +52,7 @@ namespace ogr::point {
         using FilledPoint::FilledPoint;
     };
 
-    class EdgePoint : FilledPoint {
+    struct EdgePoint : FilledPoint {
         using FilledPoint::FilledPoint;
     };
-
-    using IGrp = IGraphRecognitionPoint;
 }

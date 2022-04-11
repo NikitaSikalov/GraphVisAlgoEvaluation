@@ -13,7 +13,7 @@ namespace ogr::matrix {
     using GraphRecognitionMatrix = utils::Matrix<PointPtr>;
     using Grm = GraphRecognitionMatrix;
 
-    GraphRecognitionMatrix MakeGraphRecognitionMatrix(const size_t rows, const size_t columns) {
+    inline GraphRecognitionMatrix MakeGraphRecognitionMatrix(const size_t rows, const size_t columns) {
         utils::Matrix<PointPtr> matrix = utils::MakeMatrix<PointPtr>(rows, columns);
         for (std::size_t row = 0; row < matrix.size(); ++row) {
             for (std::size_t column = 0; column < matrix[row].size(); ++column) {
@@ -24,11 +24,11 @@ namespace ogr::matrix {
         return matrix;
     }
 
-    size_t Rows(const Grm& grm) {
+    inline size_t Rows(const Grm& grm) {
         return grm.size();
     }
 
-    size_t Columns(const Grm& grm) {
+    inline size_t Columns(const Grm& grm) {
         if (grm.empty()) {
             throw std::runtime_error{"Grm is empty"};
         }
