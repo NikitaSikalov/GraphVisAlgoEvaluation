@@ -31,15 +31,15 @@ namespace ogr {
 
     void OpticalGraphRecognition::DetectVertexes(std::function<bool(point::PointPtr)> is_vertex) {
         using SetPtr = std::unique_ptr<utils::DisjointSet>;
-        std::unordered_map<point::Point*, SetPtr> vertexes_sets;
+        std::unordered_map<point::Point*, SetPtr> points_mapping;
         size_t vertex_id_counter = 0;
         iterator::Neighbourhood8 neighbourhood;
 
         auto process_vertex_point = [&](const point::PointPtr& point) {
             utils::StackVector<utils::DisjointSet*, 9> sets;
             for (const point::PointPtr& neighbour : neighbourhood(point, grm_)) {
-                if (vertexes_sets.contains(neighbour.get())) {
-                    sets.PushBack(vertexes_sets[neighbour.get()].get());
+                if (points_mapping.contains(neighbour.get())) {
+                    sets.PushBack(points_mapping[neighbour.get()].get());
                 }
             }
 
@@ -50,15 +50,41 @@ namespace ogr {
                 utils::MergeDisjointSets(sets);
             }
 
-            vertexes_sets[point.get()] = std::move(new_set);
+            points_mapping[point.get()] = std::move(new_set);
         };
 
-        for (const utils::Row<point::PointPtr>& row : grm_) {
-            for (const point::PointPtr& point : row) {
-                if (is_vertex(point)) {
-                    process_vertex_point(point);
-                }
+        utils::ForAll(grm_, [&](point::PointPtr& point) {
+            if (is_vertex(point)) {
+                process_vertex_point(point);
             }
-        }
+        });
+
+        VertexId next_vertex_id = 0;
+        using SetId = size_t;
+        std::unordered_map<SetId, VertexId> id_mapping;
+        std::unordered_map<VertexId, VertexPtr> vertexes;
+
+        utils::ForAll(grm_, [&](point::PointPtr& point) {
+            if (!points_mapping.contains(point.get())) {
+                return;
+            }
+
+            SetPtr set = std::move(points_mapping[point.get()]);
+            SetId set_id = set->GetId();
+            if (!id_mapping.contains(set_id)) {
+                id_mapping[set_id] = next_vertex_id;
+                next_vertex_id++;
+            }
+            VertexId vid = id_mapping[set_id];
+
+            if (!vertexes.contains(vid)) {
+                vertexes[vid] = std::make_shared<Vertex>(vid);
+            }
+
+            std::shared_ptr<point::VertexPoint> vpoint = std::make_shared<point::VertexPoint>(point->row, point->column);
+            point = vpoint;
+            vertexes[vid]->points.push_back(vpoint);
+            vpoint->vertex = vertexes[vid];
+        });
     }
 }

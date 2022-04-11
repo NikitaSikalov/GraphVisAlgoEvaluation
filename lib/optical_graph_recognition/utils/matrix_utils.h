@@ -23,4 +23,13 @@ namespace ogr::utils {
 
         return result;
     }
+
+    template <typename TItem, typename TFunc>
+    inline void ForAll(Matrix<TItem>& matrix, TFunc&& func) {
+        for (auto& row : matrix) {
+            for (auto& item : row) {
+                func(item);
+            }
+        }
+    }
 }

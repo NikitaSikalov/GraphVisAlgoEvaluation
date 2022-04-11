@@ -1,5 +1,12 @@
 #pragma once
 
+#include <memory>
+
+namespace ogr {
+    struct Vertex;
+    struct Edge;
+}
+
 namespace ogr::point {
     struct IGraphRecognitionPoint;
     struct FilledPoint;
@@ -50,9 +57,11 @@ namespace ogr::point {
 
     struct VertexPoint : FilledPoint {
         using FilledPoint::FilledPoint;
+        std::weak_ptr<Vertex> vertex;
     };
 
     struct EdgePoint : FilledPoint {
         using FilledPoint::FilledPoint;
+        std::weak_ptr<Edge> edge;
     };
 }

@@ -1,5 +1,6 @@
-#include "OpticalGraphRecognition/pixel_classifier.h"
-#include "OpticalGraphRecognition/aesthetic_metrics.h"
+#include <optical_graph_recognition/optical_graph_recognition.h>
+#include <optical_graph_recognition/utils/opencv_utils.h>
+#include <optical_graph_recognition/vertex/detectors.h>
 
 #include <plog/Init.h>
 #include <plog/Log.h>
@@ -15,37 +16,40 @@ int main(int argc, char* argv[]) {
 
     const std::filesystem::path input_dir(argv[1]);
     const std::filesystem::path output_dir(argv[2]);
-    const std::filesystem::path sample_dir("sample2");
+    const std::filesystem::path sample_dir("sample1");
 
     const std::string file_name = "bundling";
-    const std::string ext = ".png";
-    const std::filesystem::path input_img = input_dir / sample_dir / (file_name + ext);
-    const std::string result_file_name = file_name + "_ogr_result" + ext;
+    const std::string input_ext = ".png";
+    const std::string output_ext = ".png";
+    const std::filesystem::path input_img = input_dir / sample_dir / (file_name + input_ext);
+    const std::string result_file_name = file_name + "_ogr_result" + output_ext;
     const std::filesystem::path output_img = output_dir / sample_dir / result_file_name;
 
     assert(std::filesystem::exists(input_img));
 
     LOG_INFO << "Read input image: " << input_img;
 
-    cv::Mat source_image;
-    source_image = cv::imread(input_img, cv::ImreadModes::IMREAD_COLOR);
+    // Step 1: Read image
+    cv::Mat colored_image = cv::imread(input_img, cv::ImreadModes::IMREAD_COLOR);
+    cv::Mat grayscale_image = cv::imread(input_img, cv::ImreadModes::IMREAD_GRAYSCALE);
 
-    NOgr::PixelClassifier classifier(source_image);
-    classifier.FindVertexes();
-    classifier.ClassifyEdgePixels();
+    LOG_INFO << "Image successfully read";
 
-    const NOgr::OgrMat& classified_image = classifier.GetClassifiedImage();
+    // Step 2: Preprocess image and get thinning graph representation
+    cv::Mat thinning_image = ogr::opencv::GetThinningImage(grayscale_image);
 
-    NOgr::AestheticMetrics aesthetic_metrics(classified_image);
-    aesthetic_metrics.PreprocessMetrics();
-    const cv::Mat colored_classified_image = classified_image.GetColoredImage();
+    LOG_INFO << "Image was thinned for morphological parsing";
 
-    LOG_INFO << "Vertexes count " << aesthetic_metrics.GetVertexesCount();
-    LOG_INFO << "Edge crossings count " << aesthetic_metrics.GetEdgeCrossingsCount();
+    // Step 3: Morphological parsing graph image
+    ogr::OpticalGraphRecognition ogr_algo(thinning_image);
 
-    LOG_INFO << "Dump image to: " << output_img;
+    LOG_INFO << "Optical graph recognition initialized";
 
-    cv::imwrite(output_img, colored_classified_image);
+    // Step 3.1: Prepare vertex detecting strategy and use this strategy for detect vertexes in source image
+    ogr::vertex::VertexPointsDetectorByColor vertex_detector(colored_image, {0, 0, 0});
+    ogr_algo.DetectVertexes(vertex_detector);
+
+    LOG_INFO << "All graph vertexes were detected from image";
 
     return 0;
 }
