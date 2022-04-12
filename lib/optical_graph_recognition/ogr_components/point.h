@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <utils/types.h>
+#include <utils/vector.h>
 
 namespace ogr {
     struct Vertex;
@@ -67,6 +68,13 @@ namespace ogr::point {
         using FilledPoint::FilledPoint;
         std::weak_ptr<Edge> edge;
     };
+
+    inline utils::Vector2 operator-(const Point& p1, const Point& p2) {
+        return utils::Vector2{
+            .x = static_cast<double>(p1.column - p2.column),
+            .y = static_cast<double>(p1.row - p2.row)
+        };
+    }
 
     inline bool IsVertexPoint(const PointPtr& point) {
         return utils::Is<VertexPoint>(point.get());
