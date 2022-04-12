@@ -23,6 +23,6 @@ namespace ogr::utils {
     template <typename TDerived, typename TBase>
     inline std::enable_if_t<std::is_base_of_v<TBase, TDerived>, bool>
     Is(const TBase* base_ptr) {
-        return dynamic_cast<TDerived*>(base_ptr) != nullptr;
+        return dynamic_cast<TDerived*>(const_cast<TBase*>(base_ptr)) != nullptr;
     }
 }

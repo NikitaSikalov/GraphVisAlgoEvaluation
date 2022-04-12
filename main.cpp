@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 
     const std::filesystem::path input_dir(argv[1]);
     const std::filesystem::path output_dir(argv[2]);
-    const std::filesystem::path sample_dir("sample1");
+    const std::filesystem::path sample_dir("sample3");
 
     const std::string file_name = "bundling";
     const std::string input_ext = ".png";
@@ -51,6 +51,11 @@ int main(int argc, char* argv[]) {
 
     LOG_INFO << "All graph vertexes were detected from image";
 
+    // Step 3.2: Parsing edges ... (WIP)
+
+    // Output results
+    LOG_INFO << "Number of vertexes is " << ogr_algo.GetVertexes().size();
+    LOG_INFO << "Number of edges is " << ogr_algo.GetEdges().size();
+
     return 0;
 }
-

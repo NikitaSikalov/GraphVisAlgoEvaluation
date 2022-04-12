@@ -1,6 +1,9 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
+
+#include <utils/types.h>
 
 namespace ogr {
     struct Vertex;
@@ -64,4 +67,21 @@ namespace ogr::point {
         using FilledPoint::FilledPoint;
         std::weak_ptr<Edge> edge;
     };
+
+    inline bool IsVertexPoint(const PointPtr& point) {
+        return utils::Is<VertexPoint>(point.get());
+    }
+
+    inline bool IsEdgePoint(const PointPtr& point) {
+        return utils::Is<EdgePoint>(point.get());
+    }
+
+    inline std::string ToString(const Point& point) {
+        std::string result = "(";
+        result += std::to_string(point.column);
+        result += ", ";
+        result +=  std::to_string(point.row);
+        result += ")";
+        return result;
+    }
 }

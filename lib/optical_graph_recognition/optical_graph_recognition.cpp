@@ -1,8 +1,9 @@
-#include <unordered_map>
+#include <plog/Log.h>
 
 #include <optical_graph_recognition.h>
 #include <utils/disjoint_set.h>
 #include <utils/stack_vector.h>
+#include <utils/debug.h>
 
 namespace ogr {
     namespace {
@@ -30,14 +31,16 @@ namespace ogr {
     }
 
     void OpticalGraphRecognition::DetectVertexes(std::function<bool(point::PointPtr)> is_vertex) {
+        LOG_DEBUG << "Detect vertexes process start";
+
         using SetPtr = std::unique_ptr<utils::DisjointSet>;
-        std::unordered_map<point::Point*, SetPtr> points_mapping;
+        std::unordered_map<point::Point *, SetPtr> points_mapping;
         size_t vertex_id_counter = 0;
         iterator::Neighbourhood8 neighbourhood;
 
-        auto process_vertex_point = [&](const point::PointPtr& point) {
-            utils::StackVector<utils::DisjointSet*, 9> sets;
-            for (const point::PointPtr& neighbour : neighbourhood(point, grm_)) {
+        auto process_vertex_point = [&](const point::PointPtr &point) {
+            utils::StackVector<utils::DisjointSet *, 9> sets;
+            for (const point::PointPtr &neighbour: neighbourhood(point, grm_)) {
                 if (points_mapping.contains(neighbour.get())) {
                     sets.PushBack(points_mapping[neighbour.get()].get());
                 }
@@ -53,7 +56,14 @@ namespace ogr {
             points_mapping[point.get()] = std::move(new_set);
         };
 
-        utils::ForAll(grm_, [&](point::PointPtr& point) {
+        LOG_DEBUG << "Building vertexes sets points...";
+
+        utils::ForAll(grm_, [&](point::PointPtr &point) {
+            // Consider only filled points
+            if (point->IsEmpty()) {
+                return;
+            }
+
             if (is_vertex(point)) {
                 process_vertex_point(point);
             }
@@ -62,29 +72,43 @@ namespace ogr {
         VertexId next_vertex_id = 0;
         using SetId = size_t;
         std::unordered_map<SetId, VertexId> id_mapping;
-        std::unordered_map<VertexId, VertexPtr> vertexes;
 
-        utils::ForAll(grm_, [&](point::PointPtr& point) {
+        LOG_DEBUG << "Building vertexes objects from vertex points";
+
+        utils::ForAll(grm_, [&](point::PointPtr &point) {
             if (!points_mapping.contains(point.get())) {
                 return;
             }
 
-            SetPtr set = std::move(points_mapping[point.get()]);
-            SetId set_id = set->GetId();
+            LOG_DEBUG << "Process vertex point: " << point::ToString(*point);
+
+            SetId set_id = points_mapping[point.get()]->GetId();
+
             if (!id_mapping.contains(set_id)) {
                 id_mapping[set_id] = next_vertex_id;
                 next_vertex_id++;
             }
             VertexId vid = id_mapping[set_id];
 
-            if (!vertexes.contains(vid)) {
-                vertexes[vid] = std::make_shared<Vertex>(vid);
+            if (!vertexes_.contains(vid)) {
+                vertexes_[vid] = std::make_shared<Vertex>(vid);
             }
 
-            std::shared_ptr<point::VertexPoint> vpoint = std::make_shared<point::VertexPoint>(point->row, point->column);
+            std::shared_ptr<point::VertexPoint> vpoint = std::make_shared<point::VertexPoint>(point->row,
+                                                                                              point->column);
             point = vpoint;
-            vertexes[vid]->points.push_back(vpoint);
-            vpoint->vertex = vertexes[vid];
+            vertexes_[vid]->points.push_back(vpoint);
+            vpoint->vertex = vertexes_[vid];
         });
+
+        LOG_DEBUG << "End vertexes detecting";
+    }
+
+    const std::unordered_map<VertexId, VertexPtr>& OpticalGraphRecognition::GetVertexes() const {
+        return vertexes_;
+    }
+
+    const std::unordered_map<EdgeId, EdgePtr>& OpticalGraphRecognition::GetEdges() const {
+        return edges_;
     }
 }
