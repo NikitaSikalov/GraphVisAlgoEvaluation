@@ -21,6 +21,12 @@ namespace ogr::utils {
     }
 
     template <typename TDerived, typename TBase>
+    inline std::shared_ptr<TDerived>
+    As(const std::shared_ptr<TBase> base_ptr) {
+        return As<TDerived>(base_ptr.get())->shared_from_this();
+    }
+
+    template <typename TDerived, typename TBase>
     inline std::enable_if_t<std::is_base_of_v<TBase, TDerived>, bool>
     Is(const TBase* base_ptr) {
         return dynamic_cast<TDerived*>(const_cast<TBase*>(base_ptr)) != nullptr;

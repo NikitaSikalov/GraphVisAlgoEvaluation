@@ -32,7 +32,7 @@ namespace ogr::point {
         virtual ~IGraphRecognitionPoint() = default;
     };
 
-    struct FilledPoint : IGraphRecognitionPoint {
+    struct FilledPoint : IGraphRecognitionPoint, std::enable_shared_from_this<FilledPoint> {
         using IGraphRecognitionPoint::IGraphRecognitionPoint;
 
         bool IsEmpty() const override {
@@ -82,6 +82,10 @@ namespace ogr::point {
 
     inline bool IsEdgePoint(const PointPtr& point) {
         return utils::Is<EdgePoint>(point.get());
+    }
+
+    inline bool IsMarkedPoint(const PointPtr& point) {
+        return utils::As<FilledPoint>(point.get())->IsMarked();
     }
 
     inline std::string ToString(const Point& point) {
