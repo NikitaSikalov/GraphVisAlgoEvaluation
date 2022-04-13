@@ -50,11 +50,11 @@ int main(int argc, char* argv[]) {
     ogr_algo.DetectVertexes(vertex_detector);
 
     LOG_INFO << "All graph vertexes were detected from image";
-
-    // Step 3.2: Parsing edges ... (WIP)
-
-    // Output results
     LOG_INFO << "Number of vertexes is " << ogr_algo.GetVertexes().size();
+
+    // Step 3.2: Detecting edges
+    ogr_algo.DetectEdges();
+
     LOG_INFO << "Number of edges is " << ogr_algo.GetEdges().size();
 
     return 0;

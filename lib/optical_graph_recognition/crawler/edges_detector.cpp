@@ -2,9 +2,15 @@
 
 #include <crawler/step_tree_node.h>
 #include <crawler/edge_crawler.h>
+#include <utils/debug.h>
+
+#include <plog/Log.h>
 
 namespace ogr::crawler {
-    matrix::Grm FindEdges(const Vertex& source, const matrix::Grm& sample) {
+    matrix::Grm FindEdges(const Vertex& source, matrix::Grm& work_grm) {
+        LOG_DEBUG << "Try to find edges from vertex";
+        LOG_DEBUG << debug::DebugDump(source);
+
         constexpr size_t kSubPathStepsSize = 10;
         constexpr size_t kStepSize = 10;
         using PathNode = StepTreeNode<kSubPathStepsSize>;
@@ -13,7 +19,7 @@ namespace ogr::crawler {
         using EdgeCrawlerPtr = std::shared_ptr<TEdgeCrawler>;
         EdgeId  edge_id_counter = 0;
 
-        matrix::Grm work_grm = matrix::CopyFromSample(sample);
+//        matrix::Grm work_grm = matrix::CopyFromSample(sample);
 
         utils::StackVector<point::FilledPointPtr, 64> port_points;
         for (auto port_point : source.port_points) {
@@ -27,9 +33,12 @@ namespace ogr::crawler {
 
         for (StepPtr step : initial_steps) {
             // Step consists only of 1 port point
-            if (step->Size() == 1) {
+            if (!step->IsExhausted()) {
                 continue;
             }
+
+            LOG_DEBUG << "Add crawler with initial step";
+            LOG_DEBUG << debug::DebugDump(*step);
 
             PathNodePtr next_path_node = std::make_shared<PathNode>(step, paths_root);
             paths_root->AddChild(next_path_node);
@@ -40,6 +49,8 @@ namespace ogr::crawler {
             EdgeCrawlerPtr crawler = crawlers.back();
             crawlers.pop_back();
 
+            LOG_DEBUG << "Run crawler";
+
             while (true) {
                 // Prepare next steps
                 auto steps = crawler->NextSteps();
@@ -47,6 +58,9 @@ namespace ogr::crawler {
                 // Select one step of available
                 auto crawler_next_step = steps.back();
                 steps.pop_back();
+
+                LOG_DEBUG << "Crawler next step";
+                LOG_DEBUG << debug::DebugDump(*crawler_next_step);
 
                 // Add crawlers for other steps
                 for (StepPtr step : steps) {

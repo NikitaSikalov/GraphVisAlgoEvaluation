@@ -1,7 +1,9 @@
-#include <optical_graph_recognition.h>
+#include "optical_graph_recognition.h"
+
 #include <utils/disjoint_set.h>
 #include <utils/stack_vector.h>
 #include <utils/debug.h>
+#include <crawler/edges_detector.h>
 
 #include <plog/Log.h>
 
@@ -80,7 +82,7 @@ namespace ogr {
                 return;
             }
 
-            LOG_DEBUG << "Process vertex point: " << point::ToString(*point);
+            LOG_DEBUG << "Process vertex point: " << debug::DebugDump(*point);
 
             SetId set_id = points_mapping[point.get()]->GetId();
 
@@ -94,8 +96,11 @@ namespace ogr {
                 vertexes_[vid] = std::make_shared<Vertex>(vid);
             }
 
-            std::shared_ptr<point::VertexPoint> vpoint = std::make_shared<point::VertexPoint>(point->row,
-                                                                                              point->column);
+            point::VertexPointPtr vpoint = std::make_shared<point::VertexPoint>(point->row, point->column);
+
+            // Mark vertex point, to avoid iterator iterate over these points
+            vpoint->Mark();
+
             point = vpoint;
             vertexes_[vid]->points.push_back(vpoint);
             vpoint->vertex = vertexes_[vid];
@@ -125,8 +130,20 @@ namespace ogr {
                     continue;
                 }
 
+                vertex_point->ResetMark();
+                vertex_point->is_port_point = true;
                 vertex->port_points.push_back(vertex_point);
             }
+        }
+    }
+
+    void OpticalGraphRecognition::DetectEdges() {
+        LOG_DEBUG << "Start detect edges";
+
+        // cv::Mat debug_dump = debug::DebugDumpGrm2CvMat(grm_);
+
+        for (const auto& [_, vertex] : vertexes_) {
+            crawler::FindEdges(*vertex, grm_);
         }
     }
 }

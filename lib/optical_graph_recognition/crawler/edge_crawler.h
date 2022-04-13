@@ -66,6 +66,6 @@ namespace ogr::crawler {
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     inline void EdgeCrawler<StepMaxSize, SubPathStepsSize>::Materialize(EdgeId edge_id) && {
         // TODO: to be implemented
-        // Materialize edge crawler path as edge with edge id param
+        throw std::runtime_error{"Materialize not implemented"};
     }
 }

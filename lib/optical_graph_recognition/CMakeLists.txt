@@ -8,6 +8,7 @@ add_library(ogr
         crawler/edge_crawler.cpp
         crawler/edges_detector.cpp
         crawler/step_tree_node.cpp
+        utils/debug.cpp
         )
 
 target_link_libraries(ogr ${OpenCV_LIBS})

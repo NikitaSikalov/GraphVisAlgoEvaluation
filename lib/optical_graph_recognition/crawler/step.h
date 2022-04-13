@@ -6,6 +6,9 @@
 #include <iterators/neighbours.h>
 #include <utils/vector.h>
 #include <utils/stack_vector.h>
+#include <utils/debug.h>
+
+#include <plog/Log.h>
 
 #include <array>
 #include <memory>
@@ -26,6 +29,7 @@ namespace ogr::crawler {
         virtual bool IsPort() const = 0;
         virtual point::FilledPointPtr GetLastPoint() = 0;
         virtual std::vector<point::FilledPointPtr> GetUnmarkedNeighbours(const matrix::Grm& grm) = 0;
+        virtual std::vector<point::FilledPointPtr> GetPoints() const = 0;
 
         virtual ~IStep() = default;
     };
@@ -34,6 +38,10 @@ namespace ogr::crawler {
     class Step final : public IStep {
     public:
         void Push(point::FilledPointPtr point) override {
+            if (point::IsPortPoint(point)) {
+                is_port_ = true;
+            }
+
             points_.PushBack(point);
         }
 
@@ -51,7 +59,7 @@ namespace ogr::crawler {
         }
 
         bool IsPort() const override {
-            // to be implemented
+            return is_port_;
         }
 
         point::FilledPointPtr GetLastPoint() override {
@@ -77,13 +85,27 @@ namespace ogr::crawler {
             return result;
         }
 
+        std::vector<point::FilledPointPtr> GetPoints() const override {
+            std::vector<point::FilledPointPtr> result;
+            for (point::FilledPointPtr point : points_) {
+                result.push_back(point);
+            }
+
+            return result;
+        }
+
     private:
         utils::StackVector<point::FilledPointPtr, MaxSize> points_;
         iterator::Neighbourhood8 neighbourhood_;
+
+        // Contains at least one port point
+        bool is_port_{false};
     };
 
     template <size_t StepSize>
     std::vector<StepPtr> MakeSteps(point::FilledPointPtr point, const matrix::Grm& grm) {
+        LOG_DEBUG << "Make steps from point: " << debug::DebugDump(*point);
+
         using NeighbourhoodStrategy = iterator::Neighbourhood8;
         NeighbourhoodStrategy neighbourhood;
 
@@ -93,16 +115,22 @@ namespace ogr::crawler {
 
         iterator::ConsecutivePointsIterator<NeighbourhoodStrategy> walker(grm, point);
         auto next_step = [&]() -> StepPtr {
+            LOG_DEBUG << "Building new step";
             StepPtr next_step = std::make_shared<Step<StepSize>>();
             while (auto next_iteration = walker.Next()) {
                 point::FilledPointPtr point = utils::As<point::FilledPoint>(*next_iteration);
                 point->Mark();
+
+                LOG_DEBUG << "Add to step point: " << debug::DebugDump(*point);
+
                 next_step->Push(point);
                 if (next_step->IsExhausted()) {
                     break;
                 }
             }
 
+            LOG_DEBUG << "Step is built";
+            LOG_DEBUG << debug::DebugDump(*next_step);
             return next_step;
         };
 

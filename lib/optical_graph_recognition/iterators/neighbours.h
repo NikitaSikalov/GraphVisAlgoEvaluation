@@ -75,9 +75,9 @@ namespace ogr::iterator {
 
     template <class TStackVector>
     std::enable_if_t<std::is_same_v<typename TStackVector::ItemType, point::PointPtr>, bool>
-    ContainsPoint(const TStackVector& points, const point::PointPtr point) {
-        for (const point::PointPtr p : points) {
-            if (p.get() == point.get()) {
+    ContainsPoint(const TStackVector& points, const point::PointPtr sample) {
+        for (const point::PointPtr point : points) {
+            if (point->row == sample->row && point->column == sample->column) {
                 return true;
             }
         }

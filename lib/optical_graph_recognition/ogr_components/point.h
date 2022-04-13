@@ -50,6 +50,10 @@ namespace ogr::point {
             marked_ = true;
         }
 
+        void ResetMark() {
+            marked_ = false;
+        }
+
         PointPtr Clone() const override {
             FilledPointPtr filled_point = std::make_shared<FilledPoint>(*this);
             return filled_point;
@@ -75,6 +79,7 @@ namespace ogr::point {
     struct VertexPoint : FilledPoint {
         using FilledPoint::FilledPoint;
         std::weak_ptr<Vertex> vertex;
+        bool is_port_point{false};
 
         PointPtr Clone() const override {
             VertexPointPtr point = std::make_shared<VertexPoint>(*this);
@@ -111,12 +116,7 @@ namespace ogr::point {
         return utils::As<FilledPoint>(point.get())->IsMarked();
     }
 
-    inline std::string ToString(const Point& point) {
-        std::string result = "(";
-        result += std::to_string(point.column);
-        result += ", ";
-        result +=  std::to_string(point.row);
-        result += ")";
-        return result;
+    inline bool IsPortPoint(const PointPtr& point) {
+        return utils::Is<VertexPoint>(point.get()) && utils::As<VertexPoint>(point.get())->is_port_point;
     }
 }
