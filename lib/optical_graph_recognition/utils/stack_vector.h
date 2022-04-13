@@ -51,6 +51,18 @@ namespace ogr::utils {
             return array_[size_ - 1];
         }
 
+        TItem& Front() {
+            assert(size_ > 0);
+
+            return array_[0];
+        }
+
+        const TItem& Front() const {
+            assert(size_ > 0);
+
+            return array_[0];
+        }
+
         Iterator begin() const {
             // FIXME: Create ConstIterator
             TItem* front = const_cast<TItem*>(&array_[0]);

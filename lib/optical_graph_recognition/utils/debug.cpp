@@ -1,6 +1,7 @@
 #include "debug.h"
 
 #include <crawler/step.h>
+#include <utils/geometry.h>
 
 namespace ogr::debug {
     cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm) {
@@ -56,7 +57,9 @@ namespace ogr::debug {
 
     std::string DebugDump(const crawler::IStep& step) {
         std::stringstream ss;
-        ss << "Step: size = " << step.Size() << "; points = ";
+        ss << "Step: size = " << step.Size() << "; ";
+        ss << "angle = " << step.GetDirectionAngle() << "; ";
+        ss << "points = ";
         for (auto point : step.GetPoints()) {
             ss << DebugDump(*point) << " ";
         }

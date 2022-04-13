@@ -22,7 +22,6 @@ namespace ogr::crawler {
     private:
         matrix::Grm& grm_;
         std::shared_ptr<PathNode> path_position_;
-        iterator::Neighbourhood8 neighbourhood_;
     };
 
     //////////////////////////////////////////////////////////////////////

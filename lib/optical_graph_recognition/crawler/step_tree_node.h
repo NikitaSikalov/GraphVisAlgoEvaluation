@@ -18,7 +18,7 @@ namespace ogr::crawler {
         explicit StepTreeNode(StepPtr step) : step_(step) {};
         StepTreeNode(StepPtr step, StepTreeNodePtr parent) : step_(step), parent_(parent) {};
 
-        utils::Vector2 GetDirection();
+        utils::PlanarVector GetDirection();
         StepTreeNodePtr GetPrevSubPathPointer();
         bool IsPort();
         bool IsRoot();

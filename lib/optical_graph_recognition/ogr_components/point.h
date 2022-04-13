@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <utils/types.h>
-#include <utils/vector.h>
+#include <utils/geometry.h>
 
 namespace ogr {
     struct Vertex;
@@ -97,10 +97,10 @@ namespace ogr::point {
         }
     };
 
-    inline utils::Vector2 operator-(const Point& p1, const Point& p2) {
-        return utils::Vector2{
-            .x = static_cast<double>(p1.column - p2.column),
-            .y = static_cast<double>(p1.row - p2.row)
+    inline utils::PlanarVector operator-(const Point& p1, const Point& p2) {
+        return utils::PlanarVector {
+            .x = static_cast<double>(p1.column) - p2.column,
+            .y = static_cast<double>(p1.row) - p2.row
         };
     }
 

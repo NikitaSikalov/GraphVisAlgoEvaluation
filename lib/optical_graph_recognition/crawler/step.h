@@ -4,7 +4,7 @@
 #include <ogr_components/matrix.h>
 #include <iterators/consecutive_iterator.h>
 #include <iterators/neighbours.h>
-#include <utils/vector.h>
+#include <utils/geometry.h>
 #include <utils/stack_vector.h>
 #include <utils/debug.h>
 
@@ -23,7 +23,7 @@ namespace ogr::crawler {
     /** General interface for steps of all sizes */
     struct IStep {
         virtual void Push(point::FilledPointPtr point) = 0;
-        virtual utils::Vector2 GetDirection() const = 0;
+        virtual double GetDirectionAngle() const = 0;
         virtual bool IsExhausted() const = 0;
         virtual size_t Size() const  = 0;
         virtual bool IsPort() const = 0;
@@ -45,9 +45,12 @@ namespace ogr::crawler {
             points_.PushBack(point);
         }
 
-        utils::Vector2 GetDirection() const override {
-            // TODO: to be implemented
-            return utils::Vector2{};
+        double GetDirectionAngle() const override {
+            point::PointPtr p1 = points_.Back();
+            point::PointPtr p2 = points_.Front();
+            utils::PlanarVector v = *p1 - *p2;
+            v.Normalize();
+            return utils::Rad2Deg(v.GetAngle());
         }
 
         bool IsExhausted() const override {
