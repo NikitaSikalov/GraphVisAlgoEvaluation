@@ -12,7 +12,7 @@ namespace ogr::utils {
     template <typename TDerived, typename TBase>
     inline std::enable_if_t<std::is_base_of_v<TBase, TDerived>, TDerived*>
     As(const TBase* base_ptr) {
-        auto* derived_ptr = dynamic_cast<TDerived*>(base_ptr);
+        auto* derived_ptr = dynamic_cast<TDerived*>(const_cast<TBase*>(base_ptr));
         if (derived_ptr == nullptr) {
             throw std::runtime_error{"Invalid dynamic cast"};
         }

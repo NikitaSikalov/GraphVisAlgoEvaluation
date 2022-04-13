@@ -23,5 +23,8 @@ namespace ogr {
         matrix::GraphRecognitionMatrix grm_;
         std::unordered_map<VertexId, VertexPtr> vertexes_;
         std::unordered_map<EdgeId, EdgePtr> edges_;
+
+    private:
+        void DetectPortPoints();
     };
 }

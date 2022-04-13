@@ -2,6 +2,7 @@
 
 #include <crawler/step_tree_node.h>
 #include <ogr_components/matrix.h>
+#include <iterators/neighbours.h>
 
 #include <vector>
 
@@ -9,14 +10,62 @@ namespace ogr::crawler {
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     class EdgeCrawler {
         using PathNode = StepTreeNode<SubPathStepsSize>;
+        using PathNodePtr = std::shared_ptr<PathNode>;
     public:
+        EdgeCrawler(matrix::Grm& grm, std::shared_ptr<PathNode> path_position);
+
         void Commit(StepPtr step);
         std::vector<StepPtr> NextSteps();
         bool CheckEdge();
         bool IsComplete();
-        void Materialize() &&;
+        void Materialize(EdgeId edge_id) &&;
     private:
+        matrix::Grm& grm_;
         std::shared_ptr<PathNode> path_position_;
-        std::shared_ptr<matrix::Grm> grm_;
+        iterator::Neighbourhood8 neighbourhood_;
     };
+
+    //////////////////////////////////////////////////////////////////////
+    /** Implementation details */
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline EdgeCrawler<StepMaxSize, SubPathStepsSize>::EdgeCrawler(
+            matrix::Grm &grm,
+            std::shared_ptr<PathNode> path_position
+    ) : grm_(grm), path_position_(path_position) {
+
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline std::vector<StepPtr> EdgeCrawler<StepMaxSize, SubPathStepsSize>::NextSteps() {
+        std::vector<point::FilledPointPtr> neighbours_vector = path_position_->GetStep().GetUnmarkedNeighbours(grm_);
+        utils::StackVector<point::FilledPointPtr, StepMaxSize * 4> neighbours(neighbours_vector);
+        return MakeSteps<StepMaxSize>(neighbours, grm_);
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::IsComplete() {
+        // Check that tree path contains more than 1 step and last step is port (contains port point)
+        return !path_position_->GetParent()->IsRoot() && path_position_->IsPort();
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline void EdgeCrawler<StepMaxSize, SubPathStepsSize>::Commit(StepPtr step) {
+        PathNodePtr next_node = std::make_shared<PathNode>(step, path_position_);
+        path_position_->AddChild(next_node);
+        path_position_ = next_node;
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge() {
+        // TODO: to be implemented
+        // Check that current edge path is valid
+        return true;
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline void EdgeCrawler<StepMaxSize, SubPathStepsSize>::Materialize(EdgeId edge_id) && {
+        // TODO: to be implemented
+        // Materialize edge crawler path as edge with edge id param
+    }
 }

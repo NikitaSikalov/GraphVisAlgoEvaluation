@@ -54,10 +54,7 @@ namespace ogr::iterator {
             }
         }
 
-        /**
-         * Generate next ConsecutivePointsIterator from unprocessed start points
-         * */
-        bool ResetAnotherPath() {
+        bool ResetToOtherPath() {
             while (true) {
                 if (other_paths_.empty()) {
                     return false;

@@ -1,9 +1,9 @@
-#include <plog/Log.h>
-
 #include <optical_graph_recognition.h>
 #include <utils/disjoint_set.h>
 #include <utils/stack_vector.h>
 #include <utils/debug.h>
+
+#include <plog/Log.h>
 
 namespace ogr {
     namespace {
@@ -102,6 +102,8 @@ namespace ogr {
         });
 
         LOG_DEBUG << "End vertexes detecting";
+
+        DetectPortPoints();
     }
 
     const std::unordered_map<VertexId, VertexPtr>& OpticalGraphRecognition::GetVertexes() const {
@@ -110,5 +112,21 @@ namespace ogr {
 
     const std::unordered_map<EdgeId, EdgePtr>& OpticalGraphRecognition::GetEdges() const {
         return edges_;
+    }
+
+    void OpticalGraphRecognition::DetectPortPoints() {
+        for (auto& [_, vertex] : vertexes_) {
+            for (auto& point : vertex->points) {
+                point::VertexPointPtr vertex_point = point.lock();
+                iterator::Neighbourhood8 neighbourhood;
+                auto neighbours = neighbourhood(vertex_point, grm_);
+                neighbours = iterator::filter::FilterVertexPoints(neighbours);
+                if (neighbours.Empty()) {
+                    continue;
+                }
+
+                vertex->port_points.push_back(vertex_point);
+            }
+        }
     }
 }

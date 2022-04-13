@@ -2,6 +2,8 @@
 
 #include <array>
 #include <initializer_list>
+#include <vector>
+#include <exception>
 
 namespace ogr::utils {
     // Stack vector for the poor
@@ -20,12 +22,33 @@ namespace ogr::utils {
                 array_[size_++] = std::move(arg);
             }
         }
+        explicit StackVector(const std::vector<TItem>& items) {
+            if (items.size() > MaxSize) {
+                throw std::runtime_error{"StackVector constructor failed due to items size overflow"};
+            }
+
+            for (const auto& item : items) {
+                array_[size_++] = item;
+            }
+        }
 
         void PushBack(const TItem& item) {
             assert(size_ < MaxSize);
 
             array_[size_] = item;
             size_++;
+        }
+
+        TItem& Back() {
+            assert(size_ > 0);
+
+            return array_[size_ - 1];
+        }
+
+        const TItem& Back() const {
+            assert(size_ > 0);
+
+            return array_[size_ - 1];
         }
 
         Iterator begin() const {

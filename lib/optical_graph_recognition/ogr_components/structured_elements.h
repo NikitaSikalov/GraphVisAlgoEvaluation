@@ -9,6 +9,7 @@ namespace ogr {
     struct Vertex {
         VertexId id;
         std::vector<std::weak_ptr<point::VertexPoint>> points;
+        std::vector<std::weak_ptr<point::VertexPoint>> port_points;
 
         explicit Vertex(const VertexId vid) : id(vid) {}
     };

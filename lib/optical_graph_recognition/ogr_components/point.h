@@ -14,12 +14,14 @@ namespace ogr {
 namespace ogr::point {
     struct IGraphRecognitionPoint;
     struct FilledPoint;
+    struct VertexPoint;
 
     using Point = IGraphRecognitionPoint;
     using PointPtr = std::shared_ptr<Point>;
     using WeakPointPtr = std::weak_ptr<Point>;
 
     using FilledPointPtr = std::shared_ptr<FilledPoint>;
+    using VertexPointPtr = std::shared_ptr<VertexPoint>;
 
     struct IGraphRecognitionPoint {
         const size_t row;
@@ -28,6 +30,7 @@ namespace ogr::point {
         IGraphRecognitionPoint(const size_t row, const size_t column) : row(row), column(column) {}
 
         virtual bool IsEmpty() const = 0;
+        virtual PointPtr Clone() const = 0;
 
         virtual ~IGraphRecognitionPoint() = default;
     };
@@ -47,6 +50,11 @@ namespace ogr::point {
             marked_ = true;
         }
 
+        PointPtr Clone() const override {
+            FilledPointPtr filled_point = std::make_shared<FilledPoint>(*this);
+            return filled_point;
+        }
+
     private:
         bool marked_{false};
     };
@@ -57,16 +65,31 @@ namespace ogr::point {
         bool IsEmpty() const override {
             return true;
         }
+
+        PointPtr Clone() const override {
+            std::shared_ptr<EmptyPoint> point = std::make_shared<EmptyPoint>(*this);
+            return point;
+        }
     };
 
     struct VertexPoint : FilledPoint {
         using FilledPoint::FilledPoint;
         std::weak_ptr<Vertex> vertex;
+
+        PointPtr Clone() const override {
+            VertexPointPtr point = std::make_shared<VertexPoint>(*this);
+            return point;
+        }
     };
 
     struct EdgePoint : FilledPoint {
         using FilledPoint::FilledPoint;
         std::weak_ptr<Edge> edge;
+
+        PointPtr Clone() const override {
+            std::shared_ptr<EdgePoint> point = std::make_shared<EdgePoint>(*this);
+            return point;
+        }
     };
 
     inline utils::Vector2 operator-(const Point& p1, const Point& p2) {
