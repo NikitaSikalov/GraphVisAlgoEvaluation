@@ -14,7 +14,6 @@ namespace ogr::crawler {
         constexpr size_t kSubPathStepsSize = 10;
         constexpr size_t kStepSize = 10;
         using PathNode = StepTreeNode<kSubPathStepsSize>;
-        using PathNodePtr = std::shared_ptr<PathNode>;
         using TEdgeCrawler = EdgeCrawler<kStepSize, kSubPathStepsSize>;
         using EdgeCrawlerPtr = std::shared_ptr<TEdgeCrawler>;
         EdgeId  edge_id_counter = 0;
@@ -27,7 +26,7 @@ namespace ogr::crawler {
         }
 
         std::vector<EdgeCrawlerPtr> crawlers;
-        PathNodePtr paths_root = std::make_shared<PathNode>();
+        StepTreeNodePtr paths_tree = PathNode::MakeRoot();
         auto initial_steps = MakeSteps<kStepSize>(port_points, work_grm);
 
 
@@ -40,8 +39,7 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step";
             LOG_DEBUG << debug::DebugDump(*step);
 
-            PathNodePtr next_path_node = std::make_shared<PathNode>(step, paths_root);
-            paths_root->AddChild(next_path_node);
+            StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
             crawlers.push_back(std::make_shared<TEdgeCrawler>(work_grm, next_path_node));
         }
 

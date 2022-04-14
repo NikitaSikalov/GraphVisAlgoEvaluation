@@ -9,6 +9,7 @@
 
 namespace ogr::crawler {
     struct IStep;
+    struct IStepTreeNode;
 }
 
 namespace ogr::debug {
@@ -17,4 +18,5 @@ namespace ogr::debug {
     std::string DebugDump(const point::Point& point);
     std::string DebugDump(const Vertex& vertex);
     std::string DebugDump(const crawler::IStep& step);
+    std::string DebugDump(const crawler::IStepTreeNode& step_tree_node);
 }

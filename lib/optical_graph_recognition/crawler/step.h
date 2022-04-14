@@ -27,7 +27,8 @@ namespace ogr::crawler {
         virtual bool IsExhausted() const = 0;
         virtual size_t Size() const  = 0;
         virtual bool IsPort() const = 0;
-        virtual point::FilledPointPtr GetLastPoint() = 0;
+        virtual point::FilledPointPtr Back() const = 0;
+        virtual point::FilledPointPtr Front() const = 0;
         virtual std::vector<point::FilledPointPtr> GetUnmarkedNeighbours(const matrix::Grm& grm) = 0;
         virtual std::vector<point::FilledPointPtr> GetPoints() const = 0;
 
@@ -65,8 +66,12 @@ namespace ogr::crawler {
             return is_port_;
         }
 
-        point::FilledPointPtr GetLastPoint() override {
+        point::FilledPointPtr Back() const override {
             return points_.Back();
+        }
+
+        point::FilledPointPtr Front() const override {
+            return points_.Front();
         }
 
         std::vector<point::FilledPointPtr> GetUnmarkedNeighbours(const matrix::Grm& grm) override {

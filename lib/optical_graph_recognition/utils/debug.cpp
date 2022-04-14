@@ -1,6 +1,7 @@
 #include "debug.h"
 
 #include <crawler/step.h>
+#include <crawler/step_tree_node.h>
 #include <utils/geometry.h>
 
 namespace ogr::debug {
@@ -33,8 +34,8 @@ namespace ogr::debug {
     std::string DebugDump(const point::Point& point) {
         std::stringstream ss;
         ss << "(" << point.column << ", " << point.row << ")";
-        std::string result = ss.str();
-        return result;
+
+        return ss.str();
     }
 
     std::string DebugDump(const Vertex& vertex) {
@@ -51,20 +52,32 @@ namespace ogr::debug {
             ss << DebugDump(*point.lock()) << " ";
         }
 
-        std::string result = ss.str();
-        return result;
+        return ss.str();
     }
 
     std::string DebugDump(const crawler::IStep& step) {
         std::stringstream ss;
-        ss << "Step: size = " << step.Size() << "; ";
-        ss << "angle = " << step.GetDirectionAngle() << "; ";
-        ss << "points = ";
+        ss << "Step info: ";
+        ss << "Size = " << step.Size() << "; ";
+        ss << "Angle = " << step.GetDirectionAngle() << "; ";
+        ss << "Start point = " << DebugDump(*step.Front()) << "; ";
+        ss << "End point = " << DebugDump(*step.Back()) << "; ";
+        ss << "Points = ";
         for (auto point : step.GetPoints()) {
             ss << DebugDump(*point) << " ";
         }
 
-        std::string result = ss.str();
-        return result;
+        return ss.str();
+    }
+
+    std::string DebugDump(const crawler::IStepTreeNode& step_tree_node) {
+        std::stringstream ss;
+        ss << "Step tree node info: ";
+        ss << "End point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
+        ss << "Last step angle = " << step_tree_node.GetLastStepAngle() << "; ";
+        ss << "State angle = " << step_tree_node.GetStateAngle() << "; ";
+        ss << "Diff with prev state = " << step_tree_node.GetDiffAngleWithPrevState() << "; ";
+
+        return ss.str();
     }
 }
