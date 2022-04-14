@@ -10,13 +10,15 @@
 namespace ogr::crawler {
     struct IStep;
     struct IStepTreeNode;
+    struct IEdgeCrawler;
 }
 
 namespace ogr::debug {
     cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm);
 
-    std::string DebugDump(const point::Point& point);
-    std::string DebugDump(const Vertex& vertex);
-    std::string DebugDump(const crawler::IStep& step);
-    std::string DebugDump(const crawler::IStepTreeNode& step_tree_node);
+    std::string DebugDump(const point::Point&);
+    std::string DebugDump(const Vertex&);
+    std::string DebugDump(const crawler::IStep&);
+    std::string DebugDump(const crawler::IStepTreeNode&);
+    std::string DebugDump(const crawler::IEdgeCrawler&);
 }

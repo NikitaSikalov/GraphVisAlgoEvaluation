@@ -2,6 +2,7 @@
 
 #include <crawler/step.h>
 #include <crawler/step_tree_node.h>
+#include <crawler/edge_crawler.h>
 #include <utils/geometry.h>
 
 namespace ogr::debug {
@@ -77,6 +78,15 @@ namespace ogr::debug {
         ss << "Last step angle = " << step_tree_node.GetLastStepAngle() << "; ";
         ss << "State angle = " << step_tree_node.GetStateAngle() << "; ";
         ss << "Diff with prev state = " << step_tree_node.GetDiffAngleWithPrevState() << "; ";
+
+        return ss.str();
+    }
+
+    std::string DebugDump(const crawler::IEdgeCrawler& crawler) {
+        std::stringstream ss;
+        ss << "Crawler info: ";
+        ss << "Current step tree node info: ";
+        ss << DebugDump(*crawler.GetCurrentStepTreeNode());
 
         return ss.str();
     }

@@ -5,19 +5,32 @@
 #include <iterators/neighbours.h>
 
 #include <vector>
+#include <memory>
 
 namespace ogr::crawler {
+    struct IEdgeCrawler;
+    using EdgeCrawlerPtr = std::shared_ptr<IEdgeCrawler>;
+
+    struct IEdgeCrawler {
+        virtual void Commit(StepPtr step) = 0;
+        virtual std::vector<StepPtr> NextSteps() = 0;
+        virtual bool CheckEdge() const = 0;
+        virtual bool IsComplete() const = 0;
+        virtual void Materialize(EdgeId edge_id) && = 0;
+        virtual StepTreeNodePtr GetCurrentStepTreeNode() const = 0;
+    };
+
     template <size_t StepMaxSize, size_t SubPathStepsSize>
-    class EdgeCrawler {
+    class EdgeCrawler : public IEdgeCrawler {
     public:
         EdgeCrawler(matrix::Grm& grm, StepTreeNodePtr path_position);
-
     public:
-        void Commit(StepPtr step);
-        std::vector<StepPtr> NextSteps();
-        bool CheckEdge();
-        bool IsComplete();
-        void Materialize(EdgeId edge_id) &&;
+        void Commit(StepPtr step) override;
+        std::vector<StepPtr> NextSteps() override;
+        bool CheckEdge() const override;
+        bool IsComplete() const override;
+        void Materialize(EdgeId edge_id) && override;
+        StepTreeNodePtr GetCurrentStepTreeNode() const override;
 
     private:
         matrix::Grm& grm_;
@@ -43,7 +56,7 @@ namespace ogr::crawler {
     }
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
-    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::IsComplete() {
+    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::IsComplete() const {
         // Check that tree path contains more than 1 step and last step is port (contains port point)
         return path_position_->GetDepth() > 2 && path_position_->IsPort();
     }
@@ -55,7 +68,12 @@ namespace ogr::crawler {
     }
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
-    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge() {
+    inline StepTreeNodePtr EdgeCrawler<StepMaxSize, SubPathStepsSize>::GetCurrentStepTreeNode() const {
+        return path_position_;
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge() const {
         // TODO: to be implemented
         // Check that current edge path is valid
         return true;
