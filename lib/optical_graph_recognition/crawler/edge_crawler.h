@@ -14,7 +14,7 @@ namespace ogr::crawler {
     struct IEdgeCrawler {
         virtual void Commit(StepPtr step) = 0;
         virtual std::vector<StepPtr> NextSteps() = 0;
-        virtual bool CheckEdge() const = 0;
+        virtual bool CheckEdge(const double angle_diff_threshold) const = 0;
         virtual bool IsComplete() const = 0;
         virtual void Materialize(EdgeId edge_id) && = 0;
         virtual StepTreeNodePtr GetCurrentStepTreeNode() const = 0;
@@ -27,7 +27,7 @@ namespace ogr::crawler {
     public:
         void Commit(StepPtr step) override;
         std::vector<StepPtr> NextSteps() override;
-        bool CheckEdge() const override;
+        bool CheckEdge(const double angle_diff_threshold) const override;
         bool IsComplete() const override;
         void Materialize(EdgeId edge_id) && override;
         StepTreeNodePtr GetCurrentStepTreeNode() const override;
@@ -73,10 +73,8 @@ namespace ogr::crawler {
     }
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
-    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge() const {
-        // TODO: to be implemented
-        // Check that current edge path is valid
-        return true;
+    inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge(const double angle_diff_threshold) const {
+        return fabs(path_position_->GetDiffAngleWithPrevState()) <= angle_diff_threshold;
     }
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>

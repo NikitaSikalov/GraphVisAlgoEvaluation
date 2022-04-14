@@ -41,17 +41,19 @@ namespace ogr::debug {
 
     std::string DebugDump(const Vertex& vertex) {
         std::stringstream ss;
-        ss << "Vertex id = " << vertex.id << "\n";
-        ss << "Vertex points: ";
+        ss << "Vertex info: ";
+        ss << "Id = " << vertex.id << "; ";
+        ss << "Points: [";
         for (const point::WeakPointPtr point : vertex.points) {
             ss << DebugDump(*point.lock()) << " ";
         }
-        ss << "\n";
+        ss << "]; ";
 
-        ss << "Vertex port points: ";
+        ss << "Port points: [";
         for (const point::WeakPointPtr point : vertex.port_points) {
             ss << DebugDump(*point.lock()) << " ";
         }
+        ss << "];";
 
         return ss.str();
     }
@@ -74,10 +76,11 @@ namespace ogr::debug {
     std::string DebugDump(const crawler::IStepTreeNode& step_tree_node) {
         std::stringstream ss;
         ss << "Step tree node info: ";
-        ss << "End point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
-        ss << "Last step angle = " << step_tree_node.GetLastStepAngle() << "; ";
-        ss << "State angle = " << step_tree_node.GetStateAngle() << "; ";
-        ss << "Diff with prev state = " << step_tree_node.GetDiffAngleWithPrevState() << "; ";
+        ss << "Point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
+        ss << "Step angle = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
+        ss << "State angle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
+        ss << "Diff angle = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
+        ss << "Depth = " << step_tree_node.GetDepth() << "; ";
 
         return ss.str();
     }

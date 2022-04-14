@@ -27,7 +27,7 @@ namespace ogr::crawler {
     template <size_t SubPathStepsSize>
     class StepTreeNode : public std::enable_shared_from_this<StepTreeNode<SubPathStepsSize>>, public IStepTreeNode {
     public:
-        StepTreeNode();
+        StepTreeNode() = default;
         explicit StepTreeNode(StepPtr step) : step_(step) {};
 
     public:
@@ -60,11 +60,6 @@ namespace ogr::crawler {
     }
 
     template <size_t SubPathStepsSize>
-    inline StepTreeNode<SubPathStepsSize>::StepTreeNode() {
-        prev_state_ = this->shared_from_this();
-    }
-
-    template <size_t SubPathStepsSize>
     inline bool StepTreeNode<SubPathStepsSize>::IsPort() const {
         return step_->IsPort();
     }
@@ -91,6 +86,10 @@ namespace ogr::crawler {
 
     template <size_t SubPathStepsSize>
     inline double StepTreeNode<SubPathStepsSize>::GetLastStepAngle() const {
+        if (IsRoot()) {
+            return 0;
+        }
+
         return step_->GetDirectionAngle();
     }
 
@@ -102,7 +101,7 @@ namespace ogr::crawler {
     template <size_t SubPathStepsSize>
     inline double StepTreeNode<SubPathStepsSize>::GetDiffAngleWithPrevState() const {
         if (depth_ <= SubPathStepsSize) {
-            return angle_;
+            return 0;
         }
 
         return prev_state_.lock()->GetStateAngle() - angle_;
@@ -115,7 +114,7 @@ namespace ogr::crawler {
         step_node->parent_ = this->shared_from_this();
         step_node->depth_ = depth_ + 1;
         if (step_node->depth_ <= SubPathStepsSize) {
-            step_node->prev_state_ = prev_state_;
+            step_node->prev_state_ = IsRoot() ? this->shared_from_this() : prev_state_.lock();
             if (IsRoot()) {
                 step_node->angle_ = step->GetDirectionAngle();
                 return step_node;
@@ -124,12 +123,12 @@ namespace ogr::crawler {
             return step_node;
         }
 
-        step_node->angle_ = angle_ - (prev_state_.lock()->GetLastStepAngle() - step->GetDirectionAngle()) / SubPathStepsSize;
         StepTreeNodePtr tree_node_ptr = this->shared_from_this();
-        for (size_t i = 0; i < SubPathStepsSize; ++i) {
+        for (size_t i = 0; i < SubPathStepsSize - 1; ++i) {
             tree_node_ptr = tree_node_ptr->GetParentNode();
         }
         step_node->prev_state_ = tree_node_ptr;
+        step_node->angle_ = angle_ - (tree_node_ptr->GetLastStepAngle() - step->GetDirectionAngle()) / SubPathStepsSize;
         return step_node;
     }
 }

@@ -7,15 +7,33 @@
 #include <plog/Log.h>
 
 namespace ogr::crawler {
+    namespace {
+        std::vector<StepPtr> FilterSteps(const std::vector<StepPtr>& steps) {
+            std::vector<StepPtr> result;
+            for (const auto& step : steps) {
+                if (!step->IsExhausted() && !step->IsPort()) {
+                    continue;
+                }
+                result.push_back(step);
+            }
+
+            return result;
+        }
+    }
+
     matrix::Grm FindEdges(const Vertex& source, matrix::Grm& work_grm) {
         LOG_DEBUG << "Try to find edges from vertex";
         LOG_DEBUG << debug::DebugDump(source);
 
-        constexpr size_t kSubPathStepsSize = 10;
+        // Configurable parameters
+        constexpr size_t kSubPathStepsSize = 5;
         constexpr size_t kStepSize = 10;
+        constexpr double kAngleDiffThreshold = 50.0;
+
         using StepTreeNodeImpl = StepTreeNode<kSubPathStepsSize>;
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
-        EdgeId  edge_id_counter = 0;
+
+        EdgeId edge_id_counter = 0;
 
         // TODO: Think about correct copying grm object with other components (vertexes, edges, etc..)
         // matrix::Grm work_grm = matrix::CopyFromSample(sample);
@@ -36,8 +54,7 @@ namespace ogr::crawler {
                 continue;
             }
 
-            LOG_DEBUG << "Add crawler with initial step";
-            LOG_DEBUG << debug::DebugDump(*step);
+            LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
             crawlers.push_back(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node));
@@ -47,32 +64,28 @@ namespace ogr::crawler {
             EdgeCrawlerPtr crawler = crawlers.back();
             crawlers.pop_back();
 
-            LOG_DEBUG << "Run crawler";
-            LOG_DEBUG << debug::DebugDump(*crawler);
+            LOG_DEBUG << "Run crawler: " << debug::DebugDump(*crawler);
 
             while (true) {
-                LOG_DEBUG << "Crawler iteration";
-                LOG_DEBUG << debug::DebugDump(*crawler);
+                LOG_DEBUG << "Crawler iteration: " << debug::DebugDump(*crawler);
 
                 // Prepare next steps
-                auto steps = crawler->NextSteps();
+                auto steps = FilterSteps(crawler->NextSteps());
+
+                if (steps.empty()) {
+                    throw std::runtime_error{"Empty steps"};
+                }
 
                 // Select one step of available
                 auto crawler_next_step = steps.back();
                 steps.pop_back();
-
-                LOG_DEBUG << "Crawler next step";
-                LOG_DEBUG << debug::DebugDump(*crawler_next_step);
 
                 // Add crawlers for other steps
                 for (StepPtr step : steps) {
                     auto next_crawler = std::make_shared<EdgeCrawlerImpl>(dynamic_cast<EdgeCrawlerImpl&>(*crawler));
                     next_crawler->Commit(step);
 
-                    if (next_crawler->CheckEdge()) {
-                        LOG_DEBUG << "Add another crawler with step";
-                        LOG_DEBUG << debug::DebugDump(*step);
-
+                    if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
                         crawlers.push_back(next_crawler);
                     }
                 }
@@ -83,7 +96,7 @@ namespace ogr::crawler {
                     break;
                 }
 
-                if (!crawler->CheckEdge()) {
+                if (!crawler->CheckEdge(kAngleDiffThreshold)) {
                     break;
                 }
             }

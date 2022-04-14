@@ -137,8 +137,7 @@ namespace ogr::crawler {
                 }
             }
 
-            LOG_DEBUG << "Step is built";
-            LOG_DEBUG << debug::DebugDump(*next_step);
+            LOG_DEBUG << "Step is built: " << debug::DebugDump(*next_step);
             return next_step;
         };
 
