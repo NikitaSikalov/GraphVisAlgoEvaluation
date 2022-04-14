@@ -18,12 +18,14 @@ namespace ogr::crawler {
         virtual bool IsComplete() const = 0;
         virtual void Materialize(EdgeId edge_id) && = 0;
         virtual StepTreeNodePtr GetCurrentStepTreeNode() const = 0;
+        virtual size_t GetId() const = 0;
+        virtual void SetId(const size_t id) = 0;
     };
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     class EdgeCrawler : public IEdgeCrawler {
     public:
-        EdgeCrawler(matrix::Grm& grm, StepTreeNodePtr path_position);
+        EdgeCrawler(matrix::Grm& grm, StepTreeNodePtr path_position, const size_t id = 0);
     public:
         void Commit(StepPtr step) override;
         std::vector<StepPtr> NextSteps() override;
@@ -31,10 +33,13 @@ namespace ogr::crawler {
         bool IsComplete() const override;
         void Materialize(EdgeId edge_id) && override;
         StepTreeNodePtr GetCurrentStepTreeNode() const override;
+        size_t GetId() const override;
+        void SetId(const size_t id) override;
 
     private:
         matrix::Grm& grm_;
         StepTreeNodePtr path_position_;
+        size_t id_{0};
     };
 
     //////////////////////////////////////////////////////////////////////
@@ -43,8 +48,9 @@ namespace ogr::crawler {
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     inline EdgeCrawler<StepMaxSize, SubPathStepsSize>::EdgeCrawler(
             matrix::Grm &grm,
-            StepTreeNodePtr path_position
-    ) : grm_(grm), path_position_(path_position) {
+            StepTreeNodePtr path_position,
+            const size_t id
+    ) : grm_(grm), path_position_(path_position), id_(id) {
 
     }
 
@@ -59,6 +65,16 @@ namespace ogr::crawler {
     inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::IsComplete() const {
         // Check that tree path contains more than 1 step and last step is port (contains port point)
         return path_position_->GetDepth() > 2 && path_position_->IsPort();
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline size_t EdgeCrawler<StepMaxSize, SubPathStepsSize>::GetId() const {
+        return id_;
+    }
+
+    template <size_t StepMaxSize, size_t SubPathStepsSize>
+    inline void EdgeCrawler<StepMaxSize, SubPathStepsSize>::SetId(const size_t id) {
+        id_ = id;
     }
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>

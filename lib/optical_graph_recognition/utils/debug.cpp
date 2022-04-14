@@ -5,14 +5,20 @@
 #include <crawler/edge_crawler.h>
 #include <utils/geometry.h>
 
+#include <filesystem>
+
 namespace ogr::debug {
+    std::string DevDirPath;
+
     cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm) {
         const size_t rows = matrix::Rows(grm);
         const size_t cols = matrix::Columns(grm);
         cv::Mat cv_image(rows, cols, CV_8UC3);
 
+        // B G R
         const cv::Vec3b filled_point_color{255, 255, 255};
         const cv::Vec3b vertex_point_color{0, 255, 0};
+        const cv::Vec3b marked_point_color{33, 111, 255};
         const cv::Vec3b edge_point_color{0, 0, 255};
 
         for (size_t row = 0; row < matrix::Rows(grm); ++row) {
@@ -22,7 +28,9 @@ namespace ogr::debug {
                 if (point::IsVertexPoint(grm_point)) {
                     cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
                 } else if (point::IsEdgePoint(grm_point)) {
-                    cv_image.at<cv::Vec3b>(cv_point)  = edge_point_color;
+                    cv_image.at<cv::Vec3b>(cv_point) = edge_point_color;
+                } else if (!grm_point->IsEmpty() && point::IsMarkedPoint(grm_point)) {
+                    cv_image.at<cv::Vec3b>(cv_point) = marked_point_color;
                 } else if (!grm_point->IsEmpty()) {
                     cv_image.at<cv::Vec3b>(cv_point) = filled_point_color;
                 }
@@ -30,6 +38,26 @@ namespace ogr::debug {
         }
 
         return cv_image;
+    }
+
+    void DebugDump(const matrix::Grm& grm, const bool force) {
+        static size_t seq_id = 0;
+        constexpr size_t kFrequency = 10;
+
+        const std::filesystem::path dev_dir(DevDirPath);
+        if (!seq_id) {
+            std::filesystem::remove_all(dev_dir);
+            std::filesystem::create_directories(dev_dir);
+        }
+
+        seq_id++;
+        if (seq_id % kFrequency != 0 && !force) {
+            return;
+        }
+
+        const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
+        cv::Mat image = DebugDumpGrm2CvMat(grm);
+        cv::imwrite(output, image);
     }
 
     std::string DebugDump(const point::Point& point) {
@@ -88,6 +116,7 @@ namespace ogr::debug {
     std::string DebugDump(const crawler::IEdgeCrawler& crawler) {
         std::stringstream ss;
         ss << "Crawler info: ";
+        ss << "Id = " << crawler.GetId() << "; ";
         ss << "Current step tree node info: ";
         ss << DebugDump(*crawler.GetCurrentStepTreeNode());
 

@@ -22,8 +22,7 @@ namespace ogr::crawler {
     }
 
     matrix::Grm FindEdges(const Vertex& source, matrix::Grm& work_grm) {
-        LOG_DEBUG << "Try to find edges from vertex";
-        LOG_DEBUG << debug::DebugDump(source);
+        LOG_DEBUG << "Try to find edges from vertex: " << debug::DebugDump(source);
 
         // Configurable parameters
         constexpr size_t kSubPathStepsSize = 5;
@@ -34,6 +33,7 @@ namespace ogr::crawler {
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
 
         EdgeId edge_id_counter = 0;
+        size_t crawler_id = 0;
 
         // TODO: Think about correct copying grm object with other components (vertexes, edges, etc..)
         // matrix::Grm work_grm = matrix::CopyFromSample(sample);
@@ -57,7 +57,7 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
-            crawlers.push_back(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node));
+            crawlers.push_back(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node, crawler_id++));
         }
 
         while (!crawlers.empty()) {
@@ -67,11 +67,11 @@ namespace ogr::crawler {
             LOG_DEBUG << "Run crawler: " << debug::DebugDump(*crawler);
 
             while (true) {
+                debug::DebugDump(work_grm);
                 LOG_DEBUG << "Crawler iteration: " << debug::DebugDump(*crawler);
 
                 // Prepare next steps
                 auto steps = FilterSteps(crawler->NextSteps());
-
                 if (steps.empty()) {
                     throw std::runtime_error{"Empty steps"};
                 }
@@ -83,6 +83,7 @@ namespace ogr::crawler {
                 // Add crawlers for other steps
                 for (StepPtr step : steps) {
                     auto next_crawler = std::make_shared<EdgeCrawlerImpl>(dynamic_cast<EdgeCrawlerImpl&>(*crawler));
+                    next_crawler->SetId(crawler_id++);
                     next_crawler->Commit(step);
 
                     if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
@@ -92,11 +93,13 @@ namespace ogr::crawler {
 
                 crawler->Commit(crawler_next_step);
                 if (crawler->IsComplete()) {
+                    LOG_DEBUG << "Materialize edge for crawler: " << debug::DebugDump(*crawler);
                     std::move(*crawler).Materialize(edge_id_counter++);
                     break;
                 }
 
                 if (!crawler->CheckEdge(kAngleDiffThreshold)) {
+                    LOG_DEBUG << "Invalid built edge: " << debug::DebugDump(*crawler);
                     break;
                 }
             }

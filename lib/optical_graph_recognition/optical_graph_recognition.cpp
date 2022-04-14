@@ -140,10 +140,13 @@ namespace ogr {
     void OpticalGraphRecognition::DetectEdges() {
         LOG_DEBUG << "Start detect edges";
 
-        // cv::Mat debug_dump = debug::DebugDumpGrm2CvMat(grm_);
-
-        for (const auto& [_, vertex] : vertexes_) {
-            crawler::FindEdges(*vertex, grm_);
+        try {
+            for (const auto&[_, vertex]: vertexes_) {
+                crawler::FindEdges(*vertex, grm_);
+            }
+        } catch (...) {
+            debug::DebugDump(grm_, /*force*/true);
+            throw;
         }
     }
 }

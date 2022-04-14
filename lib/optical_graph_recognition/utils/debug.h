@@ -6,6 +6,7 @@
 
 #include <sstream>
 #include <memory>
+#include <string>
 
 namespace ogr::crawler {
     struct IStep;
@@ -14,8 +15,11 @@ namespace ogr::crawler {
 }
 
 namespace ogr::debug {
+    extern std::string DevDirPath;
+
     cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm);
 
+    void DebugDump(const matrix::Grm& grm, const bool force = false);
     std::string DebugDump(const point::Point&);
     std::string DebugDump(const Vertex&);
     std::string DebugDump(const crawler::IStep&);

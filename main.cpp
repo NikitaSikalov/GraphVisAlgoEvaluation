@@ -1,6 +1,7 @@
 #include <optical_graph_recognition/optical_graph_recognition.h>
 #include <optical_graph_recognition/utils/opencv_utils.h>
 #include <optical_graph_recognition/vertex/detectors.h>
+#include <optical_graph_recognition/utils/debug.h>
 
 #include <plog/Init.h>
 #include <plog/Log.h>
@@ -9,13 +10,14 @@
 
 #include <filesystem>
 
-
 int main(int argc, char* argv[]) {
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
     plog::init(plog::debug, &consoleAppender);
 
     const std::filesystem::path input_dir(argv[1]);
     const std::filesystem::path output_dir(argv[2]);
+    ogr::debug::DevDirPath = argv[3];
+
     const std::filesystem::path sample_dir("sample3");
 
     const std::string file_name = "bundling";
