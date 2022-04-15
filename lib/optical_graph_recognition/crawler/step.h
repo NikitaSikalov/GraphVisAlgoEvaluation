@@ -90,7 +90,7 @@ namespace ogr::crawler {
                         continue;
                     }
                     used.insert(neighbour.get());
-                    result.push_back(utils::As<point::FilledPoint>(neighbour));
+                    result.push_back(std::dynamic_pointer_cast<point::FilledPoint>(neighbour));
                 }
             }
 
@@ -130,7 +130,7 @@ namespace ogr::crawler {
             LOG_DEBUG << "Building new step";
             StepPtr next_step = std::make_shared<Step<StepSize>>();
             while (auto next_iteration = walker.Next()) {
-                point::FilledPointPtr point = utils::As<point::FilledPoint>(*next_iteration);
+                point::FilledPointPtr point = std::dynamic_pointer_cast<point::FilledPoint>(*next_iteration);
                 point->Mark();
 
                 LOG_DEBUG << "Add to step point: " << debug::DebugDump(*point);

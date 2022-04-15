@@ -7,6 +7,7 @@
 #include <sstream>
 #include <memory>
 #include <string>
+#include <optional>
 
 namespace ogr::crawler {
     struct IStep;

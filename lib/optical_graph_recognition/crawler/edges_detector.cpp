@@ -6,6 +6,8 @@
 
 #include <plog/Log.h>
 
+#include <queue>
+
 namespace ogr::crawler {
     namespace {
         std::vector<StepPtr> FilterSteps(const std::vector<StepPtr>& steps) {
@@ -21,7 +23,7 @@ namespace ogr::crawler {
         }
     }
 
-    matrix::Grm FindEdges(const Vertex& source, matrix::Grm& work_grm) {
+    std::vector<EdgePtr> FindEdges(const Vertex& source, matrix::Grm& grm, size_t& edge_id_counter) {
         LOG_DEBUG << "Try to find edges from vertex: " << debug::DebugDump(source);
 
         // Configurable parameters
@@ -32,10 +34,7 @@ namespace ogr::crawler {
         using StepTreeNodeImpl = StepTreeNode<kSubPathStepsSize>;
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
 
-        EdgeId edge_id_counter = 0;
-
-        // TODO: Think about correct copying grm object with other components (vertexes, edges, etc..)
-        // matrix::Grm work_grm = matrix::CopyFromSample(sample);
+        std::vector<EdgePtr> edges;
 
         utils::StackVector<point::FilledPointPtr, 64> port_points;
         for (auto port_point : source.port_points) {
@@ -44,7 +43,7 @@ namespace ogr::crawler {
 
         std::priority_queue<EdgeCrawlerPtr, std::vector<EdgeCrawlerPtr>, crawler::Comparator> crawlers;
         StepTreeNodePtr paths_tree = StepTreeNodeImpl::MakeRoot();
-        auto initial_steps = MakeSteps<kStepSize>(port_points, work_grm);
+        auto initial_steps = MakeSteps<kStepSize>(port_points, grm);
 
 
         for (StepPtr step : initial_steps) {
@@ -56,11 +55,11 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
-            crawlers.push(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node));
+            crawlers.push(std::make_shared<EdgeCrawlerImpl>(grm, next_path_node));
         }
 
         while (!crawlers.empty()) {
-            debug::DebugDump(work_grm);
+            debug::DebugDump(grm);
 
             EdgeCrawlerPtr crawler = crawlers.top();
             crawlers.pop();
@@ -81,7 +80,8 @@ namespace ogr::crawler {
 
                 if (next_crawler->IsComplete()) {
                     LOG_DEBUG << "Materialize edge for crawler: " << debug::DebugDump(*next_crawler);
-                    std::move(*next_crawler).Materialize(edge_id_counter++);
+                    EdgePtr new_edge = std::move(*next_crawler).Materialize(source.id, edge_id_counter++, grm);
+                    edges.push_back(new_edge);
                     continue;
                 }
 
@@ -95,6 +95,6 @@ namespace ogr::crawler {
             }
         }
 
-        return work_grm;
+        return edges;
     }
 }

@@ -34,15 +34,4 @@ namespace ogr::matrix {
 
         return grm[0].size();
     }
-
-    inline Grm CopyFromSample(const Grm& sample) {
-        Grm result = MakeGraphRecognitionMatrix(Rows(sample), Columns(sample));
-        for (size_t row = 0; row < Rows(sample); ++row) {
-            for (size_t col = 0; col < Columns(sample); ++col) {
-                result[row][col] = sample[row][col]->Clone();
-            }
-        }
-
-        return result;
-    }
 }

@@ -141,10 +141,19 @@ namespace ogr {
         LOG_DEBUG << "Start detect edges";
 
         debug::DebugDump(grm_, true);
+        size_t edge_id_counter = 0;
 
         try {
             for (const auto&[_, vertex]: vertexes_) {
-                crawler::FindEdges(*vertex, grm_);
+                if (vertex->id != 0) {
+                    continue;
+                }
+
+                auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
+
+                for (const EdgePtr& edge : found_edges) {
+                    edges_[edge->id] = edge;
+                }
 
                 debug::DebugDump(grm_, /*force*/true);
 
@@ -157,6 +166,12 @@ namespace ogr {
                         point::Mark(point);
                     }
                 });
+
+                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true);
             }
         } catch (...) {
             debug::DebugDump(grm_, /*force*/true);

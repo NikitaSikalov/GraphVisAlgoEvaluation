@@ -15,11 +15,11 @@ namespace ogr::debug {
         const size_t cols = matrix::Columns(grm);
         cv::Mat cv_image(rows, cols, CV_8UC3);
 
-        // B G R
+        // {B, G, R}
         const cv::Vec3b filled_point_color{255, 255, 255};
         const cv::Vec3b vertex_point_color{0, 255, 0};
         const cv::Vec3b marked_point_color{33, 111, 255};
-        const cv::Vec3b edge_point_color{0, 0, 255};
+        const cv::Vec3b edge_point_color{63, 253, 255};
 
         for (size_t row = 0; row < matrix::Rows(grm); ++row) {
             for (size_t col = 0; col < matrix::Columns(grm); ++col) {
@@ -42,7 +42,7 @@ namespace ogr::debug {
 
     void DebugDump(const matrix::Grm& grm, const bool force) {
         static size_t seq_id = 0;
-        constexpr size_t kFrequency = 10;
+        constexpr size_t kFrequency = 1;
 
         const std::filesystem::path dev_dir(DevDirPath);
         if (!seq_id) {
@@ -57,6 +57,7 @@ namespace ogr::debug {
 
         const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
         cv::Mat image = DebugDumpGrm2CvMat(grm);
+
         cv::imwrite(output, image);
     }
 
