@@ -22,6 +22,12 @@ namespace ogr::crawler {
         virtual void SetId(const size_t id) = 0;
     };
 
+    struct Comparator {
+        bool operator()(const EdgeCrawlerPtr& crawler1, const EdgeCrawlerPtr& crawler2) {
+            return crawler1->GetCurrentStepTreeNode()->GetDiffAngleWithLastStep() > crawler2->GetCurrentStepTreeNode()->GetDiffAngleWithLastStep();
+        }
+    };
+
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     class EdgeCrawler : public IEdgeCrawler {
     public:

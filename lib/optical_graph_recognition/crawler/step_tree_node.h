@@ -14,6 +14,7 @@ namespace ogr::crawler {
         virtual double GetLastStepAngle() const = 0;
         virtual double GetStateAngle() const = 0;
         virtual double GetDiffAngleWithPrevState() const = 0;
+        virtual double GetDiffAngleWithLastStep() const = 0;
         virtual bool IsPort() const = 0;
         virtual bool IsRoot() const = 0;
         virtual StepPtr GetStep() const = 0;
@@ -37,6 +38,7 @@ namespace ogr::crawler {
         double GetLastStepAngle() const override;
         double GetStateAngle() const override;
         double GetDiffAngleWithPrevState() const override;
+        double GetDiffAngleWithLastStep() const override;
         bool IsPort() const override;
         bool IsRoot() const override;
         StepPtr GetStep() const override;
@@ -104,7 +106,16 @@ namespace ogr::crawler {
             return 0;
         }
 
-        return prev_state_.lock()->GetStateAngle() - angle_;
+        return utils::AbsDiffAngles(prev_state_.lock()->GetStateAngle(), angle_);
+    }
+
+    template <size_t SubPathStepsSize>
+    inline double StepTreeNode<SubPathStepsSize>::GetDiffAngleWithLastStep() const {
+        if (depth_ < 2) {
+            return 0;
+        }
+
+        return utils::AbsDiffAngles(parent_.lock()->GetStateAngle(), step_->GetDirectionAngle());
     }
 
     template <size_t SubPathStepsSize>
@@ -116,10 +127,11 @@ namespace ogr::crawler {
         if (step_node->depth_ <= SubPathStepsSize) {
             step_node->prev_state_ = IsRoot() ? this->shared_from_this() : prev_state_.lock();
             if (IsRoot()) {
-                step_node->angle_ = step->GetDirectionAngle();
+                step_node->angle_ = utils::NormalizeAngle(step->GetDirectionAngle());
                 return step_node;
             }
-            step_node->angle_ = (angle_ * depth_ + step->GetDirectionAngle()) / (depth_ + 1);
+            const double step_angle = utils::AlignAngle(step->GetDirectionAngle(), angle_);
+            step_node->angle_ = utils::NormalizeAngle((angle_ * depth_ + step_angle) / (depth_ + 1));
             return step_node;
         }
 
@@ -130,11 +142,15 @@ namespace ogr::crawler {
         step_node->prev_state_ = tree_node_ptr;
 
         if (step->IsPort() && step->Size() == 1) {
-            step_node->angle_ = angle_;
+            step_node->angle_ = utils::NormalizeAngle(angle_);
             return step_node;
         }
 
-        step_node->angle_ = angle_ - (tree_node_ptr->GetLastStepAngle() - step->GetDirectionAngle()) / SubPathStepsSize;
+        const double step_actual_angle = step->GetDirectionAngle();
+        const double aligned_step_angle = utils::AlignAngle(step_actual_angle, angle_);
+        const double last_step_angle = tree_node_ptr->GetLastStepAngle();
+        const double aligned_last_step_angle = utils::AlignAngle(last_step_angle, angle_);
+        step_node->angle_ = utils::NormalizeAngle(angle_ - (aligned_last_step_angle - aligned_step_angle) / SubPathStepsSize);
         return step_node;
     }
 }

@@ -43,7 +43,7 @@ namespace ogr::crawler {
             port_points.PushBack(port_point.lock());
         }
 
-        std::vector<EdgeCrawlerPtr> crawlers;
+        std::priority_queue<EdgeCrawlerPtr, std::vector<EdgeCrawlerPtr>, crawler::Comparator> crawlers;
         StepTreeNodePtr paths_tree = StepTreeNodeImpl::MakeRoot();
         auto initial_steps = MakeSteps<kStepSize>(port_points, work_grm);
 
@@ -57,57 +57,42 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
-            crawlers.push_back(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node, crawler_id++));
+            crawlers.push(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node, crawler_id++));
         }
 
         while (!crawlers.empty()) {
-            EdgeCrawlerPtr crawler = crawlers.back();
-            crawlers.pop_back();
+            debug::DebugDump(work_grm);
+
+            EdgeCrawlerPtr crawler = crawlers.top();
+            crawlers.pop();
 
             LOG_DEBUG << "Run crawler: " << debug::DebugDump(*crawler);
 
-            while (true) {
-                debug::DebugDump(work_grm);
-                LOG_DEBUG << "Crawler iteration: " << debug::DebugDump(*crawler);
+            // Prepare next steps
+            auto steps = FilterSteps(crawler->NextSteps());
+            if (steps.empty()) {
+                LOG_DEBUG << "Next steps empty, skip crawler: " << debug::DebugDump(*crawler);
+                continue;
+            }
 
-                // Prepare next steps
-                auto steps = FilterSteps(crawler->NextSteps());
-                if (steps.empty()) {
-                    break;
+            // Add crawlers for other steps
+            for (StepPtr step : steps) {
+                auto next_crawler = std::make_shared<EdgeCrawlerImpl>(dynamic_cast<EdgeCrawlerImpl&>(*crawler));
+                next_crawler->Commit(step);
+
+                if (next_crawler->IsComplete()) {
+                    LOG_DEBUG << "Materialize edge for crawler: " << debug::DebugDump(*next_crawler);
+                    std::move(*next_crawler).Materialize(edge_id_counter++);
+                    continue;
                 }
 
-                const double current_angle = crawler->GetCurrentStepTreeNode()->GetStateAngle();
-                std::sort(steps.begin(), steps.end(), [&](const StepPtr& step1, const StepPtr& step2) {
-                    return abs(step1->GetDirectionAngle() - current_angle) > abs(step2->GetDirectionAngle() - current_angle);
-                });
-                // Select one step of available
-                auto crawler_next_step = steps.back();
-                steps.pop_back();
-
-                // Add crawlers for other steps
-                for (StepPtr step : steps) {
-                    auto next_crawler = std::make_shared<EdgeCrawlerImpl>(dynamic_cast<EdgeCrawlerImpl&>(*crawler));
-                    next_crawler->SetId(crawler_id++);
-                    next_crawler->Commit(step);
-
-                    if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
-                        crawlers.push_back(next_crawler);
-                    } else {
-                        LOG_DEBUG << "Skip crawler: " << debug::DebugDump(*next_crawler);
-                    }
+                if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
+                    LOG_DEBUG << "Push crawler to queue: " << debug::DebugDump(*next_crawler);
+                    crawlers.push(next_crawler);
+                    continue;
                 }
 
-                crawler->Commit(crawler_next_step);
-                if (crawler->IsComplete()) {
-                    LOG_DEBUG << "Materialize edge for crawler: " << debug::DebugDump(*crawler);
-                    std::move(*crawler).Materialize(edge_id_counter++);
-                    break;
-                }
-
-                if (!crawler->CheckEdge(kAngleDiffThreshold)) {
-                    LOG_DEBUG << "Skip crawler: " << debug::DebugDump(*crawler);
-                    break;
-                }
+                LOG_DEBUG << "Skip crawler: " << debug::DebugDump(*next_crawler);
             }
         }
 
