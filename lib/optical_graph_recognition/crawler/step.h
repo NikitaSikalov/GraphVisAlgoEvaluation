@@ -47,6 +47,10 @@ namespace ogr::crawler {
         }
 
         double GetDirectionAngle() const override {
+            if (Size() <= 1) {
+                throw std::runtime_error{"Try to get direction angle from step consists of points less than 2"};
+            }
+
             point::PointPtr p1 = points_.Back();
             point::PointPtr p2 = points_.Front();
             utils::PlanarVector v = *p1 - *p2;

@@ -73,9 +73,13 @@ namespace ogr::crawler {
                 // Prepare next steps
                 auto steps = FilterSteps(crawler->NextSteps());
                 if (steps.empty()) {
-                    throw std::runtime_error{"Empty steps"};
+                    break;
                 }
 
+                const double current_angle = crawler->GetCurrentStepTreeNode()->GetStateAngle();
+                std::sort(steps.begin(), steps.end(), [&](const StepPtr& step1, const StepPtr& step2) {
+                    return abs(step1->GetDirectionAngle() - current_angle) > abs(step2->GetDirectionAngle() - current_angle);
+                });
                 // Select one step of available
                 auto crawler_next_step = steps.back();
                 steps.pop_back();
@@ -88,6 +92,8 @@ namespace ogr::crawler {
 
                     if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
                         crawlers.push_back(next_crawler);
+                    } else {
+                        LOG_DEBUG << "Skip crawler: " << debug::DebugDump(*next_crawler);
                     }
                 }
 
@@ -99,7 +105,7 @@ namespace ogr::crawler {
                 }
 
                 if (!crawler->CheckEdge(kAngleDiffThreshold)) {
-                    LOG_DEBUG << "Invalid built edge: " << debug::DebugDump(*crawler);
+                    LOG_DEBUG << "Skip crawler: " << debug::DebugDump(*crawler);
                     break;
                 }
             }

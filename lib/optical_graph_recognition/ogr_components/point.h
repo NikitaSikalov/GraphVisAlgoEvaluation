@@ -119,4 +119,16 @@ namespace ogr::point {
     inline bool IsPortPoint(const PointPtr& point) {
         return utils::Is<VertexPoint>(point.get()) && utils::As<VertexPoint>(point.get())->is_port_point;
     }
+
+    inline bool IsFilledPoint(const PointPtr& point) {
+        return utils::Is<FilledPoint>(point.get());
+    }
+
+    inline void Unmark(const PointPtr& point) {
+        return utils::As<FilledPoint>(point.get())->ResetMark();
+    }
+
+    inline void Mark(const PointPtr& point) {
+        return utils::As<FilledPoint>(point.get())->Mark();
+    }
 }

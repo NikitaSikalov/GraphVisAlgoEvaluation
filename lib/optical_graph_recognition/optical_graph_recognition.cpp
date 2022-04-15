@@ -140,9 +140,23 @@ namespace ogr {
     void OpticalGraphRecognition::DetectEdges() {
         LOG_DEBUG << "Start detect edges";
 
+        debug::DebugDump(grm_, true);
+
         try {
             for (const auto&[_, vertex]: vertexes_) {
                 crawler::FindEdges(*vertex, grm_);
+
+                debug::DebugDump(grm_, /*force*/true);
+
+                utils::ForAll(grm_, [](const point::PointPtr& point) {
+                    if (point::IsFilledPoint(point)) {
+                        point::Unmark(point);
+                    }
+
+                    if (point::IsVertexPoint(point) && !point::IsPortPoint(point)) {
+                        point::Mark(point);
+                    }
+                });
             }
         } catch (...) {
             debug::DebugDump(grm_, /*force*/true);

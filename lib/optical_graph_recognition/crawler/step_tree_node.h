@@ -128,6 +128,12 @@ namespace ogr::crawler {
             tree_node_ptr = tree_node_ptr->GetParentNode();
         }
         step_node->prev_state_ = tree_node_ptr;
+
+        if (step->IsPort() && step->Size() == 1) {
+            step_node->angle_ = angle_;
+            return step_node;
+        }
+
         step_node->angle_ = angle_ - (tree_node_ptr->GetLastStepAngle() - step->GetDirectionAngle()) / SubPathStepsSize;
         return step_node;
     }

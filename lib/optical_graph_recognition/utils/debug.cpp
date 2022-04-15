@@ -90,7 +90,11 @@ namespace ogr::debug {
         std::stringstream ss;
         ss << "Step info: ";
         ss << "Size = " << step.Size() << "; ";
-        ss << "Angle = " << step.GetDirectionAngle() << "; ";
+
+        if (step.Size() >= 2) {
+            ss << "Angle = " << step.GetDirectionAngle() << "; ";
+        }
+
         ss << "Start point = " << DebugDump(*step.Front()) << "; ";
         ss << "End point = " << DebugDump(*step.Back()) << "; ";
         ss << "Points = ";
@@ -105,7 +109,11 @@ namespace ogr::debug {
         std::stringstream ss;
         ss << "Step tree node info: ";
         ss << "Point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
-        ss << "Step angle = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
+
+        if (step_tree_node.GetStep()->Size() >= 2) {
+            ss << "Step angle = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
+        }
+
         ss << "State angle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
         ss << "Diff angle = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
         ss << "Depth = " << step_tree_node.GetDepth() << "; ";
