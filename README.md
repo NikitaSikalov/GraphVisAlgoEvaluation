@@ -34,6 +34,6 @@ mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make
 
 ### Results
 
-Below you can see visualization of algorithms implementation for finding edges from one particular vertex:
+Below you can see visualization of algorithm implementation for finding edges from one particular vertex:
 
 ![](./cv_results/sample1/crawler.gif)
