@@ -33,7 +33,6 @@ namespace ogr::crawler {
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
 
         EdgeId edge_id_counter = 0;
-        size_t crawler_id = 0;
 
         // TODO: Think about correct copying grm object with other components (vertexes, edges, etc..)
         // matrix::Grm work_grm = matrix::CopyFromSample(sample);
@@ -57,7 +56,7 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
-            crawlers.push(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node, crawler_id++));
+            crawlers.push(std::make_shared<EdgeCrawlerImpl>(work_grm, next_path_node));
         }
 
         while (!crawlers.empty()) {

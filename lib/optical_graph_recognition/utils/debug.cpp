@@ -124,7 +124,6 @@ namespace ogr::debug {
     std::string DebugDump(const crawler::IEdgeCrawler& crawler) {
         std::stringstream ss;
         ss << "Crawler info: ";
-        ss << "Id = " << crawler.GetId() << "; ";
         ss << "Current step tree node info: ";
         ss << DebugDump(*crawler.GetCurrentStepTreeNode());
 
