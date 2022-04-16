@@ -1,13 +1,15 @@
 #pragma once
 
-#include <unordered_map>
-
-#include <opencv2/opencv.hpp>
-
 #include <ogr_components/matrix.h>
 #include <iterators/consecutive_iterator.h>
 #include <vertex/detectors.h>
 #include <utils/debug.h>
+
+#include <opencv2/opencv.hpp>
+
+#include <unordered_map>
+#include <optional>
+
 
 namespace ogr {
     class OpticalGraphRecognition {
@@ -15,7 +17,7 @@ namespace ogr {
         explicit OpticalGraphRecognition(const cv::Mat& source_graph);
 
         void DetectVertexes(std::function<bool(point::PointPtr)> is_vertex);
-        void DetectEdges();
+        void DetectEdges(std::optional<VertexId> vertex_id = std::nullopt);
 
         const std::unordered_map<VertexId, VertexPtr>& GetVertexes() const;
         const std::unordered_map<EdgeId, EdgePtr>& GetEdges() const;

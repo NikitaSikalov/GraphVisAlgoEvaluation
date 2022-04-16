@@ -53,9 +53,20 @@ namespace ogr::crawler {
 
             point::PointPtr p1 = points_.Back();
             point::PointPtr p2 = points_.Front();
-            utils::PlanarVector v = *p1 - *p2;
-            v.Normalize();
-            return utils::Rad2Deg(v.GetAngle());
+            utils::PlanarVector v1 = *p1 - *p2;
+            v1.Normalize();
+            const double alpha1 = utils::Rad2Deg(v1.GetAngle());
+            if (Size() == 2) {
+                return alpha1;
+            }
+
+            point::PointPtr p3 = points_[Size() - 2];
+            utils::PlanarVector v2 = *p1 - *p2;
+            v2.Normalize();
+            double alpha2 = utils::Rad2Deg(v2.GetAngle());
+            alpha2 = utils::AlignAngle(alpha2, alpha1);
+
+            return utils::NormalizeAngle((alpha1 + alpha2) / 2);
         }
 
         bool IsExhausted() const override {

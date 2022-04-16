@@ -1,5 +1,6 @@
 #include "edges_detector.h"
 
+#include <algo_params/params.h>
 #include <crawler/step_tree_node.h>
 #include <crawler/edge_crawler.h>
 #include <utils/debug.h>
@@ -29,7 +30,6 @@ namespace ogr::crawler {
         // Configurable parameters
         constexpr size_t kSubPathStepsSize = 7;
         constexpr size_t kStepSize = 10;
-        constexpr double kAngleDiffThreshold = 25.0;
 
         using StepTreeNodeImpl = StepTreeNode<kSubPathStepsSize>;
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
@@ -86,7 +86,6 @@ namespace ogr::crawler {
                 }
 
                 if (next_crawler->CheckEdge(kAngleDiffThreshold)) {
-                    LOG_DEBUG << "Push crawler to queue: " << debug::DebugDump(*next_crawler);
                     crawlers.push(next_crawler);
                     continue;
                 }

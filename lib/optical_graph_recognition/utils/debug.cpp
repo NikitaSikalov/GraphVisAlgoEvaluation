@@ -91,6 +91,9 @@ namespace ogr::debug {
         }
 
         const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
+
+        LOG_INFO << "Dump result image with detected edges to " << output;
+
         cv::Mat image = DebugDumpGrm2CvMat(grm, vertex_filter);
 
         cv::imwrite(output, image);
@@ -146,15 +149,15 @@ namespace ogr::debug {
         ss << "Step tree node info: ";
         ss << "Point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
 
-        if (step_tree_node.GetStep()->Size() >= 2) {
-            ss << "Step = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
-        }
-
         ss << "IsStable = " << step_tree_node.IsStable() << "; ";
         ss << "IsValid = " << step_tree_node.IsValid() << "; ";
-        ss << "Angle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
-        ss << "DiffStates = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
+        ss << "StateAngle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
+        if (step_tree_node.GetStep()->Size() >= 2) {
+            ss << "StepAngle = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
+        }
 
+        ss << "DiffStates = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
+        ss << "DiffStables = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevStableState()) << "; ";
         if (step_tree_node.GetStep()->Size() >= 2) {
             ss << "DiffStep = " << static_cast<int>(step_tree_node.GetDiffAngleWithLastStep()) << "; ";
         }

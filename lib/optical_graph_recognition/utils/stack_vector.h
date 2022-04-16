@@ -93,6 +93,14 @@ namespace ogr::utils {
             return !size_;
         }
 
+        const TItem& operator[](size_t index) const {
+            return array_[index];
+        }
+
+        TItem& operator[](size_t index) {
+            return array_[index];
+        }
+
     public:
         class Iterator {
         public:

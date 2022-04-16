@@ -137,13 +137,20 @@ namespace ogr {
         }
     }
 
-    void OpticalGraphRecognition::DetectEdges() {
+    void OpticalGraphRecognition::DetectEdges(std::optional<VertexId> vertex_id) {
         LOG_DEBUG << "Start detect edges";
 
         debug::DebugDump(grm_, true);
         size_t edge_id_counter = 0;
 
         for (const auto&[_, vertex]: vertexes_) {
+            // Useful for debugging
+            if (vertex_id.has_value() && vertex->id != *vertex_id) {
+                continue;
+            }
+
+            LOG_INFO << "Detect edges for vertex with id = " << vertex->id;
+
             auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
 
             for (const EdgePtr& edge : found_edges) {

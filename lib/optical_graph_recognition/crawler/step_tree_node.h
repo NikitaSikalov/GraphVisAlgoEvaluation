@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algo_params/params.h>
 #include <crawler/step.h>
 
 #include <memory>
 #include <vector>
+
 
 namespace ogr::crawler {
     struct IStepTreeNode;
@@ -15,6 +17,7 @@ namespace ogr::crawler {
         virtual double GetStateAngle() const = 0;
         virtual double GetDiffAngleWithPrevState() const = 0;
         virtual double GetDiffAngleWithLastStep() const = 0;
+        virtual double GetDiffAngleWithPrevStableState() const = 0;
         virtual bool IsPort() const = 0;
         virtual bool IsRoot() const = 0;
         virtual StepPtr GetStep() const = 0;
@@ -40,15 +43,12 @@ namespace ogr::crawler {
     public:
         static StepTreeNodePtr MakeRoot();
 
-        // Configurable parameters
-        static constexpr double kStableStateAngleDiffLocalThreshold = 13.0;
-        static constexpr double kStableStateAngleDiffThreshold = 20.0;
-
     public:
         double GetLastStepAngle() const override;
         double GetStateAngle() const override;
         double GetDiffAngleWithPrevState() const override;
         double GetDiffAngleWithLastStep() const override;
+        double GetDiffAngleWithPrevStableState() const override;
         bool IsPort() const override;
         bool IsRoot() const override;
         StepPtr GetStep() const override;
@@ -177,6 +177,7 @@ namespace ogr::crawler {
         } while (false);
 
         step_node->stable_state_ = stable_state_;
+        step_node->stable_depth_ = 1;
         if (step_node->GetDiffAngleWithLastStep() <= kStableStateAngleDiffLocalThreshold) {
             step_node->stable_depth_ = stable_depth_ + 1;
             if (step_node->stable_depth_ == SubPathStepsSize) {
@@ -190,10 +191,9 @@ namespace ogr::crawler {
     }
 
     template <size_t SubPathStepsSize>
-    inline void StepTreeNode<SubPathStepsSize>::CommitStableState() {
+    inline double StepTreeNode<SubPathStepsSize>::GetDiffAngleWithPrevStableState() const {
         if (!stable_state_.use_count()) {
-            stable_state_ = this->shared_from_this();
-            return;
+            return 0;
         }
 
         StepTreeNodePtr prev_stable_state = stable_state_.lock();
@@ -201,9 +201,20 @@ namespace ogr::crawler {
         const double current_state_angle = GetStateAngle();
         const double diff = utils::AbsDiffAngles(current_state_angle, prev_stable_state_angle);
 
+        return diff;
+    }
+
+    template <size_t SubPathStepsSize>
+    inline void StepTreeNode<SubPathStepsSize>::CommitStableState() {
+        if (!stable_state_.use_count()) {
+            stable_state_ = this->shared_from_this();
+            return;
+        }
+
         // Check diff angles with previous stable state
-        if (diff > kStableStateAngleDiffThreshold) {
+        if (GetDiffAngleWithPrevStableState() > kStableStateAngleDiffThreshold) {
             is_valid_ = false;
+            return;
         }
 
         stable_state_ = this->shared_from_this();
