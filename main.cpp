@@ -14,18 +14,8 @@ int main(int argc, char* argv[]) {
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
     plog::init(plog::debug, &consoleAppender);
 
-    const std::filesystem::path input_dir(argv[1]);
-    const std::filesystem::path output_dir(argv[2]);
-    ogr::debug::DevDirPath = argv[3];
-
-    const std::filesystem::path sample_dir("sample3");
-
-    const std::string file_name = "bundling";
-    const std::string input_ext = ".png";
-    const std::string output_ext = ".png";
-    const std::filesystem::path input_img = input_dir / sample_dir / (file_name + input_ext);
-    const std::string result_file_name = file_name + "_ogr_result" + output_ext;
-    const std::filesystem::path output_img = output_dir / sample_dir / result_file_name;
+    const std::filesystem::path input_img(argv[1]);
+    ogr::debug::DevDirPath = argv[2];
 
     assert(std::filesystem::exists(input_img));
 

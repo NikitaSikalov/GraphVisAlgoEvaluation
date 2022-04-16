@@ -75,7 +75,9 @@ namespace ogr::debug {
 
     void DebugDump(const matrix::Grm& grm, const bool force, std::optional<VertexId> vertex_filter) {
         static size_t seq_id = 0;
-        constexpr size_t kFrequency = 1;
+
+        // Dump only in force mode
+        constexpr size_t kFrequency = std::numeric_limits<size_t>::max();
 
         const std::filesystem::path dev_dir(DevDirPath);
         if (!seq_id) {

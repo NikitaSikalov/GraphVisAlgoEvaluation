@@ -29,11 +29,18 @@ To build source code use cmake:
 mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make
 ```
 
-### Running (WIP...)
-...
+### Running
+
+```
+./build/main <absolute input image path> <absolute output dir path>
+```
 
 ### Results
 
+1. [sample1](./samples/1) => [result1](./results/1)
+2. [sample2](./samples/2) => [result2](./results/2)
+3. [sample3](./samples/3) => [result3](./results/3)
+
 Below you can see visualization of algorithm implementation for finding edges from one particular vertex:
 
-![](./cv_results/sample1/crawler.gif)
+![](./results/algo_vis.gif)

@@ -150,7 +150,7 @@ namespace ogr {
                 edges_[edge->id] = edge;
             }
 
-            debug::DebugDump(grm_, /*force*/true, vertex->id);
+            debug::DebugDump(grm_, /*force*/false, vertex->id);
 
             utils::ForAll(grm_, [](const point::PointPtr& point) {
                 if (point::IsFilledPoint(point)) {
