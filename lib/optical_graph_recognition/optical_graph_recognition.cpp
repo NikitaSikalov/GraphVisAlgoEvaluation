@@ -145,17 +145,13 @@ namespace ogr {
 
         try {
             for (const auto&[_, vertex]: vertexes_) {
-                if (vertex->id != 0) {
-                    continue;
-                }
-
                 auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
 
                 for (const EdgePtr& edge : found_edges) {
                     edges_[edge->id] = edge;
                 }
 
-                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true, vertex->id);
 
                 utils::ForAll(grm_, [](const point::PointPtr& point) {
                     if (point::IsFilledPoint(point)) {
@@ -167,11 +163,7 @@ namespace ogr {
                     }
                 });
 
-                debug::DebugDump(grm_, /*force*/true);
-                debug::DebugDump(grm_, /*force*/true);
-                debug::DebugDump(grm_, /*force*/true);
-                debug::DebugDump(grm_, /*force*/true);
-                debug::DebugDump(grm_, /*force*/true);
+                debug::DebugDump(grm_, /*force*/true, vertex->id);
             }
         } catch (...) {
             debug::DebugDump(grm_, /*force*/true);
