@@ -115,7 +115,7 @@ namespace ogr::crawler {
                 const size_t column = point->column;
                 point::EdgePointPtr edge_point = std::make_shared<point::EdgePoint>(row, column);
                 edge_point->Mark();
-                edge_point->edge = edge;
+                edge_point->edges.push_back(edge);
                 grm[row][column] = edge_point;
                 edge->points.push_back(edge_point);
             }

@@ -74,7 +74,8 @@ namespace ogr::point {
 
     struct EdgePoint : FilledPoint {
         using FilledPoint::FilledPoint;
-        std::weak_ptr<Edge> edge;
+
+        std::vector<std::weak_ptr<Edge>> edges;
     };
 
     inline utils::PlanarVector operator-(const Point& p1, const Point& p2) {
