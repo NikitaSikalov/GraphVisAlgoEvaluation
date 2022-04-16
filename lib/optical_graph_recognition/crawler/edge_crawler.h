@@ -80,6 +80,14 @@ namespace ogr::crawler {
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     inline bool EdgeCrawler<StepMaxSize, SubPathStepsSize>::CheckEdge(const double angle_diff_threshold) const {
+        if (!path_position_->IsValid()) {
+            return false;
+        }
+
+        if (path_position_->IsStable()) {
+            return true;
+        }
+
         return fabs(path_position_->GetDiffAngleWithPrevState()) <= angle_diff_threshold;
     }
 

@@ -27,9 +27,9 @@ namespace ogr::crawler {
         LOG_DEBUG << "Try to find edges from vertex: " << debug::DebugDump(source);
 
         // Configurable parameters
-        constexpr size_t kSubPathStepsSize = 5;
+        constexpr size_t kSubPathStepsSize = 7;
         constexpr size_t kStepSize = 10;
-        constexpr double kAngleDiffThreshold = 50.0;
+        constexpr double kAngleDiffThreshold = 25.0;
 
         using StepTreeNodeImpl = StepTreeNode<kSubPathStepsSize>;
         using EdgeCrawlerImpl = EdgeCrawler<kStepSize, kSubPathStepsSize>;
@@ -59,7 +59,7 @@ namespace ogr::crawler {
         }
 
         while (!crawlers.empty()) {
-            debug::DebugDump(grm);
+            debug::DebugDump(grm, false, source.id);
 
             EdgeCrawlerPtr crawler = crawlers.top();
             crawlers.pop();

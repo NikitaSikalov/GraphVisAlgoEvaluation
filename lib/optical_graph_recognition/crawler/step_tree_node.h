@@ -19,10 +19,16 @@ namespace ogr::crawler {
         virtual bool IsRoot() const = 0;
         virtual StepPtr GetStep() const = 0;
         virtual size_t GetDepth() const = 0;
+        virtual size_t GetStableDepth() const = 0;
         virtual std::shared_ptr<IStepTreeNode> MakeChild(StepPtr step) = 0;
         virtual StepTreeNodePtr GetParentNode() const = 0;
+        virtual bool IsStable() const = 0;
+        virtual bool IsValid() const = 0;
 
         virtual ~IStepTreeNode() = default;
+
+    private:
+        virtual void CommitStableState() = 0;
     };
 
     template <size_t SubPathStepsSize>
@@ -34,6 +40,10 @@ namespace ogr::crawler {
     public:
         static StepTreeNodePtr MakeRoot();
 
+        // Configurable parameters
+        static constexpr double kStableStateAngleDiffLocalThreshold = 13.0;
+        static constexpr double kStableStateAngleDiffThreshold = 20.0;
+
     public:
         double GetLastStepAngle() const override;
         double GetStateAngle() const override;
@@ -44,15 +54,24 @@ namespace ogr::crawler {
         StepPtr GetStep() const override;
         StepTreeNodePtr MakeChild(StepPtr step) override;
         size_t GetDepth() const override;
+        size_t GetStableDepth() const override;
         StepTreeNodePtr GetParentNode() const override;
+        bool IsStable() const override;
+        bool IsValid() const override;
+
+    private:
+        void CommitStableState() override;
 
     private:
         std::vector<StepTreeNodePtr> children_;
         WeakStepTreeNodePtr parent_;
+        WeakStepTreeNodePtr stable_state_;
         StepPtr step_{nullptr};
         WeakStepTreeNodePtr prev_state_;
         double angle_{0};
         size_t depth_{0};
+        size_t stable_depth_{0};
+        bool is_valid_{true};
     };
 
     template <size_t SubPathStepsSize>
@@ -124,33 +143,88 @@ namespace ogr::crawler {
         children_.push_back(step_node);
         step_node->parent_ = this->shared_from_this();
         step_node->depth_ = depth_ + 1;
-        if (step_node->depth_ <= SubPathStepsSize) {
-            step_node->prev_state_ = IsRoot() ? this->shared_from_this() : prev_state_.lock();
-            if (IsRoot()) {
-                step_node->angle_ = utils::NormalizeAngle(step->GetDirectionAngle());
+
+        do {
+            if (step_node->depth_ <= SubPathStepsSize) {
+                step_node->prev_state_ = IsRoot() ? this->shared_from_this() : prev_state_.lock();
+                if (IsRoot()) {
+                    step_node->angle_ = utils::NormalizeAngle(step->GetDirectionAngle());
+                    break;
+                }
+
+                const double step_angle = utils::AlignAngle(step->GetDirectionAngle(), angle_);
+                step_node->angle_ = utils::NormalizeAngle((angle_ * depth_ + step_angle) / (depth_ + 1));
+                break;
+            }
+
+            StepTreeNodePtr tree_node_ptr = this->shared_from_this();
+            for (size_t i = 0; i < SubPathStepsSize - 1; ++i) {
+                tree_node_ptr = tree_node_ptr->GetParentNode();
+            }
+            step_node->prev_state_ = tree_node_ptr;
+
+            if (step->IsPort() && step->Size() == 1) {
+                step_node->angle_ = utils::NormalizeAngle(angle_);
                 return step_node;
             }
-            const double step_angle = utils::AlignAngle(step->GetDirectionAngle(), angle_);
-            step_node->angle_ = utils::NormalizeAngle((angle_ * depth_ + step_angle) / (depth_ + 1));
-            return step_node;
+
+            const double step_actual_angle = step->GetDirectionAngle();
+            const double aligned_step_angle = utils::AlignAngle(step_actual_angle, angle_);
+            const double last_step_angle = tree_node_ptr->GetLastStepAngle();
+            const double aligned_last_step_angle = utils::AlignAngle(last_step_angle, angle_);
+            step_node->angle_ = utils::NormalizeAngle(
+                    angle_ - (aligned_last_step_angle - aligned_step_angle) / SubPathStepsSize);
+        } while (false);
+
+        step_node->stable_state_ = stable_state_;
+        if (step_node->GetDiffAngleWithLastStep() <= kStableStateAngleDiffLocalThreshold) {
+            step_node->stable_depth_ = stable_depth_ + 1;
+            if (step_node->stable_depth_ == SubPathStepsSize) {
+                step_node->CommitStableState();
+            } else if (step_node->stable_depth_ > SubPathStepsSize) {
+                step_node->stable_state_ = step_node;
+            }
         }
 
-        StepTreeNodePtr tree_node_ptr = this->shared_from_this();
-        for (size_t i = 0; i < SubPathStepsSize - 1; ++i) {
-            tree_node_ptr = tree_node_ptr->GetParentNode();
-        }
-        step_node->prev_state_ = tree_node_ptr;
-
-        if (step->IsPort() && step->Size() == 1) {
-            step_node->angle_ = utils::NormalizeAngle(angle_);
-            return step_node;
-        }
-
-        const double step_actual_angle = step->GetDirectionAngle();
-        const double aligned_step_angle = utils::AlignAngle(step_actual_angle, angle_);
-        const double last_step_angle = tree_node_ptr->GetLastStepAngle();
-        const double aligned_last_step_angle = utils::AlignAngle(last_step_angle, angle_);
-        step_node->angle_ = utils::NormalizeAngle(angle_ - (aligned_last_step_angle - aligned_step_angle) / SubPathStepsSize);
         return step_node;
+    }
+
+    template <size_t SubPathStepsSize>
+    inline void StepTreeNode<SubPathStepsSize>::CommitStableState() {
+        if (!stable_state_.use_count()) {
+            stable_state_ = this->shared_from_this();
+            return;
+        }
+
+        StepTreeNodePtr prev_stable_state = stable_state_.lock();
+        const double prev_stable_state_angle = prev_stable_state->GetStateAngle();
+        const double current_state_angle = GetStateAngle();
+        const double diff = utils::AbsDiffAngles(current_state_angle, prev_stable_state_angle);
+
+        // Check diff angles with previous stable state
+        if (diff > kStableStateAngleDiffThreshold) {
+            is_valid_ = false;
+        }
+
+        stable_state_ = this->shared_from_this();
+    }
+
+    template <size_t SubPathStepsSize>
+    inline bool StepTreeNode<SubPathStepsSize>::IsStable() const {
+        if (!stable_state_.use_count()) {
+            return false;
+        }
+
+        return stable_state_.lock().get() == this;
+    }
+
+    template <size_t SubPathStepsSize>
+    inline bool StepTreeNode<SubPathStepsSize>::IsValid() const {
+        return is_valid_;
+    }
+
+    template <size_t SubPathStepsSize>
+    inline size_t StepTreeNode<SubPathStepsSize>::GetStableDepth() const {
+        return stable_depth_;
     }
 }
