@@ -143,31 +143,27 @@ namespace ogr {
         debug::DebugDump(grm_, true);
         size_t edge_id_counter = 0;
 
-        try {
-            for (const auto&[_, vertex]: vertexes_) {
-                auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
+        for (const auto&[_, vertex]: vertexes_) {
+            auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
 
-                for (const EdgePtr& edge : found_edges) {
-                    edges_[edge->id] = edge;
+            for (const EdgePtr& edge : found_edges) {
+                edges_[edge->id] = edge;
+            }
+
+            debug::DebugDump(grm_, /*force*/true, vertex->id);
+
+            utils::ForAll(grm_, [](const point::PointPtr& point) {
+                if (point::IsFilledPoint(point)) {
+                    point::Unmark(point);
                 }
 
-                debug::DebugDump(grm_, /*force*/true, vertex->id);
+                if (point::IsVertexPoint(point) && !point::IsPortPoint(point)) {
+                    point::Mark(point);
+                }
+            });
 
-                utils::ForAll(grm_, [](const point::PointPtr& point) {
-                    if (point::IsFilledPoint(point)) {
-                        point::Unmark(point);
-                    }
-
-                    if (point::IsVertexPoint(point) && !point::IsPortPoint(point)) {
-                        point::Mark(point);
-                    }
-                });
-
-                debug::DebugDump(grm_, /*force*/true, vertex->id);
-            }
-        } catch (...) {
-            debug::DebugDump(grm_, /*force*/true);
-            throw;
+            debug::DebugDump(grm_, /*force*/true, vertex->id);
         }
+
     }
 }

@@ -145,12 +145,20 @@ namespace ogr::debug {
         ss << "Point = " << DebugDump(*(step_tree_node.GetStep()->Back())) << "; ";
 
         if (step_tree_node.GetStep()->Size() >= 2) {
-            ss << "Step angle = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
+            ss << "Step = " << static_cast<int>(step_tree_node.GetLastStepAngle()) << "; ";
         }
 
-        ss << "State angle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
-        ss << "Diff angle = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
+        ss << "IsStable = " << step_tree_node.IsStable() << "; ";
+        ss << "IsValid = " << step_tree_node.IsValid() << "; ";
+        ss << "Angle = " << static_cast<int>(step_tree_node.GetStateAngle()) << "; ";
+        ss << "DiffStates = " << static_cast<int>(step_tree_node.GetDiffAngleWithPrevState()) << "; ";
+
+        if (step_tree_node.GetStep()->Size() >= 2) {
+            ss << "DiffStep = " << static_cast<int>(step_tree_node.GetDiffAngleWithLastStep()) << "; ";
+        }
+
         ss << "Depth = " << step_tree_node.GetDepth() << "; ";
+        ss << "SDepth = " << step_tree_node.GetStableDepth() << "; ";
 
         return ss.str();
     }
