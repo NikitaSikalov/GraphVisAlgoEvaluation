@@ -5,18 +5,11 @@
 
 namespace ogr::opencv {
     inline cv::Mat GetThinningImage(const cv::Mat& image) {
-        cv::Mat blurred_image;
-        cv::GaussianBlur(image, blurred_image, {5, 5}, 0);
-
         cv::Mat binaryImage;
-        cv::threshold(blurred_image, binaryImage, 250, 255, cv::THRESH_BINARY_INV);
-
-        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_CROSS, {5, 5});
-        cv::Mat preprocessed_image;
-        morphologyEx(binaryImage, preprocessed_image, cv::MORPH_OPEN, kernel);
+        cv::threshold(image, binaryImage, 250, 255, cv::THRESH_BINARY_INV);
 
         cv::Mat skel;
-        cv::ximgproc::thinning(preprocessed_image, skel);
+        cv::ximgproc::thinning(binaryImage, skel);
 
         return skel;
     }
