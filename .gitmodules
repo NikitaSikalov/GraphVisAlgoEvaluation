@@ -1,3 +1,6 @@
 [submodule "plog"]
 	path = plog
 	url = git@github.com:SergiusTheBest/plog.git
+[submodule "cli_parser"]
+	path = cli_parser
+	url = git@github.com:CLIUtils/CLI11.git
