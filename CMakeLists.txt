@@ -8,6 +8,7 @@ message(STATUS "Use OpenCV lib with version: ${OpenCV_VERSION}")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(plog/include)
+include_directories(cli_parser/include)
 include_directories(lib)
 include_directories(lib/optical_graph_recognition)
 
