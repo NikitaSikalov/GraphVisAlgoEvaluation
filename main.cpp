@@ -49,6 +49,8 @@ int main(int argc, char* argv[]) {
         ->check(check_path);
     app.add_option("--vertex", vertex, "Run algo only for particular vertex")
         ->default_val(std::nullopt);
+    app.add_flag("--dump-intermediate", ogr::debug::DumpIntermediateResults)
+        ->default_val(false);
     auto* algo_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
     algo_params->add_option("--curvature", ogr::kStableStateAngleDiffLocalThreshold, "Acceptable steps curvature")
         ->default_val(13.0);
@@ -109,7 +111,7 @@ int main(int argc, char* argv[]) {
     if (!ogr::debug::DevDirPath.empty()) {
         output_dir = std::filesystem::path(ogr::debug::DevDirPath);
     }
-    ogr_algo.DumpResultImages(output_dir);
+    ogr_algo.DumpResultImages(output_dir, vertex);
 
     // Step 4.0: Print results
     LOG_INFO << "Number of vertexes is " << ogr_algo.GetVertexes().size();

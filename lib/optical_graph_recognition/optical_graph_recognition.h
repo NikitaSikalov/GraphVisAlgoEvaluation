@@ -26,7 +26,7 @@ namespace ogr {
         void UnionFoundEdges();
         void IntersectFoundEdges();
 
-        void DumpResultImages(const std::filesystem::path output_dir);
+        void DumpResultImages(const std::filesystem::path output_dir, std::optional<VertexId> vertex = std::nullopt);
 
     private:
         matrix::GraphRecognitionMatrix grm_;

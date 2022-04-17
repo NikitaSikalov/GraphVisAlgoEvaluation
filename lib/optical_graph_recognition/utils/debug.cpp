@@ -13,6 +13,7 @@
 
 namespace ogr::debug {
     std::string DevDirPath;
+    bool DumpIntermediateResults;
 
     void DebugDump(const matrix::Grm& grm, std::optional<VertexId> vertex_filter) {
         static size_t seq_id = 0;
@@ -28,6 +29,10 @@ namespace ogr::debug {
             std::filesystem::create_directories(dev_dir);
         }
         seq_id++;
+
+        if(!DumpIntermediateResults) {
+            return;
+        }
 
         const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
 

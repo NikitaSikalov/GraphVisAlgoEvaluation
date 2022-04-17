@@ -17,6 +17,7 @@ namespace ogr::crawler {
 
 namespace ogr::debug {
     extern std::string DevDirPath;
+    extern bool DumpIntermediateResults;
 
     void DebugDump(const matrix::Grm& grm, std::optional<VertexId> vertex_filter = std::nullopt);
     std::string DebugDump(const point::Point&);

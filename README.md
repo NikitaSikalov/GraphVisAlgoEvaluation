@@ -63,3 +63,4 @@ Options:
 Below you can see visualization of algorithm implementation for finding edges from one particular vertex:
 
 ![](./results/algo_vis.gif)
+![](./results/algo_vis2.gif)

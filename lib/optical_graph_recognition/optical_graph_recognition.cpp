@@ -270,9 +270,13 @@ namespace ogr {
         });
     }
 
-    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path output_dir) {
+    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path output_dir, std::optional<VertexId> filter_vertex) {
         const std::string base_name = "vertex_";
         for (auto& [vid, vertex] : vertexes_) {
+            if (filter_vertex.has_value() && vertex->id != *filter_vertex) {
+                continue;
+            }
+
             std::filesystem::path image_path = output_dir / (base_name + std::to_string(vid) + ".png");
             cv::Mat mat = opencv::Grm2CvMat(grm_, utils::EdgePointFilterWithVertex{vid});
 
