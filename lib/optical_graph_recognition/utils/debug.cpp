@@ -4,76 +4,17 @@
 #include <crawler/step_tree_node.h>
 #include <crawler/edge_crawler.h>
 #include <utils/geometry.h>
+#include <utils/opencv_utils.h>
 
 #include <filesystem>
 
+
 namespace ogr::debug {
-    namespace {
-        bool IsPointOfEdgeWithVertexSource(point::PointPtr point, VertexId source_id) {
-            if (!point::IsEdgePoint(point)) {
-                return false;
-            }
-
-            point::EdgePointPtr edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
-            for (const std::weak_ptr<Edge> edge : edge_point->edges) {
-                if (edge.lock()->v1 == source_id) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool ContainsVertexPointInNeighbourhood(point::PointPtr point, const matrix::Grm& grm) {
-            iterator::Neighbourhood4 neighbourhood8;
-            for (point::PointPtr point : neighbourhood8(point, grm)) {
-                if (point::IsVertexPoint(point)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-
     std::string DevDirPath;
 
-    cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm, std::optional<VertexId> vertex_filter) {
-        const size_t rows = matrix::Rows(grm);
-        const size_t cols = matrix::Columns(grm);
-        cv::Mat cv_image(rows, cols, CV_8UC3);
-
-        // {B, G, R}
-        const cv::Vec3b filled_point_color{255, 255, 255};
-        const cv::Vec3b vertex_point_color{0, 0, 255};
-        const cv::Vec3b marked_point_color{33, 111, 255};
-        const cv::Vec3b edge_point_color{63, 253, 255};
-
-        for (size_t row = 0; row < matrix::Rows(grm); ++row) {
-            for (size_t col = 0; col < matrix::Columns(grm); ++col) {
-                const cv::Point cv_point(col, row);
-                const point::PointPtr& grm_point = grm[row][col];
-                if (point::IsVertexPoint(grm_point)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
-                } else if (vertex_filter.has_value() && IsPointOfEdgeWithVertexSource(grm_point, vertex_filter.value())) {
-                    cv_image.at<cv::Vec3b>(cv_point) = edge_point_color;
-                } else if (!vertex_filter.has_value() && point::IsEdgePoint(grm_point)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = edge_point_color;
-                } else if (!grm_point->IsEmpty() && point::IsMarkedPoint(grm_point)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = marked_point_color;
-                } else if (!grm_point->IsEmpty()) {
-                    cv_image.at<cv::Vec3b>(cv_point) = filled_point_color;
-                } else if (ContainsVertexPointInNeighbourhood(grm_point, grm)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
-                }
-            }
-        }
-
-        return cv_image;
-    }
-
     void DebugDump(const matrix::Grm& grm, const bool force, std::optional<VertexId> vertex_filter) {
+        return;
+
         static size_t seq_id = 0;
 
         // Dump only in force mode
@@ -92,9 +33,9 @@ namespace ogr::debug {
 
         const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
 
-        LOG_INFO << "Dump result image with detected edges to " << output;
-
-        cv::Mat image = DebugDumpGrm2CvMat(grm, vertex_filter);
+        cv::Mat image = vertex_filter.has_value()
+                ? opencv::Grm2CvMat(grm, utils::EdgePointFilterWithSourceVertex{*vertex_filter})
+                : opencv::Grm2CvMat(grm);
 
         cv::imwrite(output, image);
     }

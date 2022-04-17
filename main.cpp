@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     plog::init(plog::debug, &consoleAppender);
 
     const std::filesystem::path input_img(argv[1]);
-    ogr::debug::DevDirPath = argv[2];
+    const std::filesystem::path output_dir(argv[2]);
 
     assert(std::filesystem::exists(input_img));
 
@@ -56,8 +56,12 @@ int main(int argc, char* argv[]) {
     ogr::kStableStateAngleDiffThreshold = 20.0;
     ogr::kAngleDiffThreshold = 25.0;
 
-    // Run algorithm
+    // Run algorithm of edges detecting
     ogr_algo.DetectEdges();
+    ogr_algo.UnionFoundEdges();
+
+    // Dump algo results
+    ogr_algo.DumpResultImages(output_dir);
 
 
     // Step 4.0: Print results

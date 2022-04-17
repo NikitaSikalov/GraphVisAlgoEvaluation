@@ -1,10 +1,12 @@
 #pragma once
 
-#include <iostream>
-#include <memory>
-
 #include <utils/types.h>
 #include <utils/geometry.h>
+
+#include <iostream>
+#include <memory>
+#include <set>
+
 
 namespace ogr {
     struct Vertex;
@@ -94,7 +96,11 @@ namespace ogr::point {
     }
 
     inline bool IsMarkedPoint(const PointPtr& point) {
-        return utils::As<FilledPoint>(point.get())->IsMarked();
+        if (FilledPointPtr filled_point = std::dynamic_pointer_cast<FilledPoint>(point)) {
+            return filled_point->IsMarked();
+        }
+
+        return false;
     }
 
     inline bool IsPortPoint(const PointPtr& point) {

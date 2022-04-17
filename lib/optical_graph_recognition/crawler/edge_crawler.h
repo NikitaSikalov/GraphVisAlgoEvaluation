@@ -114,17 +114,25 @@ namespace ogr::crawler {
 
         while (!current_path_node->IsRoot()) {
             StepPtr step = current_path_node->GetStep();
-            for (point::PointPtr point : step->GetPoints()) {
+            edge->irregularity = std::max(edge->irregularity, current_path_node->GetDiffAngleWithPrevStableState());
+
+            for (point::PointPtr step_point : step->GetPoints()) {
+                // Attention! Point in grm can be different from point in step!
+                point::PointPtr point = grm[step_point->row][step_point->column];
                 if (point::IsPortPoint(point)) {
                     continue;
                 }
 
-                const size_t row = point->row;
-                const size_t column = point->column;
-                point::EdgePointPtr edge_point = std::make_shared<point::EdgePoint>(row, column);
+                point::EdgePointPtr edge_point;
+                if (point::IsEdgePoint(point)) {
+                    edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
+                } else {
+                    edge_point = std::make_shared<point::EdgePoint>(point->row, point->column);
+                    grm[point->row][point->column] = edge_point;
+                }
+
                 edge_point->Mark();
                 edge_point->edges.push_back(edge);
-                grm[row][column] = edge_point;
                 edge->points.push_back(edge_point);
             }
 

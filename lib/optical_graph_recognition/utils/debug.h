@@ -18,8 +18,6 @@ namespace ogr::crawler {
 namespace ogr::debug {
     extern std::string DevDirPath;
 
-    cv::Mat DebugDumpGrm2CvMat(const matrix::Grm& grm, std::optional<VertexId> vertex_filter = std::nullopt);
-
     void DebugDump(const matrix::Grm& grm, const bool force = false, std::optional<VertexId> vertex_filter = std::nullopt);
     std::string DebugDump(const point::Point&);
     std::string DebugDump(const Vertex&);

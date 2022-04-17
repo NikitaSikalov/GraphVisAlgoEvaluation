@@ -7,6 +7,21 @@
 
 #include <plog/Log.h>
 
+#include <string>
+
+
+namespace std {
+    template <>
+    struct hash<std::pair<ogr::VertexId, ogr::VertexId>> {
+        size_t operator()(const std::pair<ogr::VertexId, ogr::VertexId>& key) const {
+            auto hashFn = std::hash<ogr::VertexId>{};
+            uint64_t hash1 = hashFn(key.first);
+            uint64_t hash2 = hashFn(key.second);
+            return hash1 ^ hash2;
+        }
+    };
+}
+
 namespace ogr {
     namespace {
         matrix::Grm MakeGraphRecognitionMatrixFromCvMatrix(const cv::Mat& image) {
@@ -151,9 +166,10 @@ namespace ogr {
 
             LOG_INFO << "Detect edges for vertex with id = " << vertex->id;
 
-            auto found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
+            std::vector<EdgePtr> found_edges = crawler::FindEdges(*vertex, grm_, edge_id_counter);
 
-            for (const EdgePtr& edge : found_edges) {
+            for (const EdgePtr edge : found_edges) {
+                LOG_INFO << "Found edge with id = " << edge->id << " source vertex = " << edge->v1 << " sink vertex = " << edge->v2;
                 edges_[edge->id] = edge;
             }
 
@@ -171,6 +187,97 @@ namespace ogr {
 
             debug::DebugDump(grm_, /*force*/true, vertex->id);
         }
+    }
 
+    void OpticalGraphRecognition::UnionFoundEdges() {
+        PostProcessEdges(false);
+    }
+
+    void OpticalGraphRecognition::IntersectFoundEdges() {
+        PostProcessEdges(true);
+    }
+
+    void OpticalGraphRecognition::PostProcessEdges(bool intersect) {
+        using EdgeKey = std::pair<VertexId, VertexId>;
+        auto make_mirror_key = [](EdgeKey key) -> EdgeKey {
+            return std::make_pair(key.second, key.first);
+        };
+
+        std::unordered_map<EdgeId, EdgePtr> next_edges_;
+
+        // Build edges map (Source, Sink) -> Edge
+        std::unordered_map<EdgeKey, EdgePtr> edges_map;
+        for (const auto& [_, edge] : edges_) {
+            EdgeKey key = std::make_pair(edge->v1, edge->v2);
+            if (edges_map.contains(key)) {
+                edges_map[key] = ChooseBestEdge(edge, edges_map[key]);
+            } else {
+                edges_map[key] = edge;
+            }
+        }
+
+        std::set<EdgeKey> processed_;
+        for (auto& [key, edge] : edges_map) {
+            if (processed_.contains(key)) {
+                continue;
+            }
+
+            processed_.insert(key);
+            EdgeKey mirrored_key = make_mirror_key(key);
+            if (intersect && !edges_map.contains(mirrored_key)) {
+                edge->Reset();
+                continue;
+            }
+
+            if (!edges_map.contains(mirrored_key)) {
+                next_edges_[edge->id] = edge;
+                continue;
+            }
+
+            processed_.insert(mirrored_key);
+
+            EdgePtr edge1 = edge;
+            EdgePtr edge2 = edges_map[mirrored_key];
+
+            EdgePtr best_edge = ChooseBestEdge(edge1, edge2);
+            next_edges_[best_edge->id] = best_edge;
+        }
+
+        edges_ = std::move(next_edges_);
+        ClearGrmFromUnusedEdgePoints();
+    }
+
+    EdgePtr OpticalGraphRecognition::ChooseBestEdge(EdgePtr e1, EdgePtr e2) {
+        if (e1->irregularity < e2->irregularity) {
+            LOG_DEBUG << "Reset edge id = " << e2->id;
+            e2->Reset();
+            return e1;
+        }
+
+        LOG_DEBUG << "Reset edge id = " << e1->id;
+        e1->Reset();
+        return e2;
+    }
+
+    void OpticalGraphRecognition::ClearGrmFromUnusedEdgePoints() {
+        utils::ForAll(grm_, [](point::PointPtr& point) {
+           if (point::IsEdgePoint(point)) {
+               point::EdgePointPtr edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
+               if (edge_point->edges.empty()) {
+                   point = std::make_shared<point::FilledPoint>(point->row, point->column);
+               }
+           }
+        });
+    }
+
+    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path output_dir) {
+        const std::string base_name = "vertex_";
+        for (auto& [vid, vertex] : vertexes_) {
+            std::filesystem::path image_path = output_dir / (base_name + std::to_string(vid) + ".png");
+            cv::Mat mat = opencv::Grm2CvMat(grm_, utils::EdgePointFilterWithVertex{vid});
+
+            LOG_INFO << "Dump detected edges for vertex with id = " << vid;
+            cv::imwrite(image_path, mat);
+        }
     }
 }
