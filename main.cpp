@@ -14,6 +14,7 @@
 #include <CLI/Formatter.hpp>
 
 #include <filesystem>
+#include <optional>
 
 
 int main(int argc, char* argv[]) {
@@ -22,6 +23,8 @@ int main(int argc, char* argv[]) {
     std::filesystem::path input_img;
     std::filesystem::path output_dir;
     std::string log_level;
+    std::optional<ogr::VertexId> vertex;
+    std::string union_strategy;
 
     auto check_path = [](const std::string& path) {
         std::string error_msg;
@@ -32,6 +35,7 @@ int main(int argc, char* argv[]) {
 
         return error_msg;
     };
+
     app.add_option("-i,--input", input_img, "Input image path")
         ->required()
         ->check(check_path);
@@ -41,6 +45,19 @@ int main(int argc, char* argv[]) {
     app.add_option("--log-level", log_level, "Log level: info, debug, none")
         ->envname("LOG_LEVEL")
         ->default_val("info");
+    app.add_option("--dev-dir", ogr::debug::DevDirPath, "Path dir to dev steps dump")
+        ->check(check_path);
+    app.add_option("--vertex", vertex, "Run algo only for particular vertex")
+        ->default_val(std::nullopt);
+    auto* algo_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
+    algo_params->add_option("--curvature", ogr::kStableStateAngleDiffLocalThreshold, "Acceptable steps curvature")
+        ->default_val(13.0);
+    algo_params->add_option("--stable-diff", ogr::kStableStateAngleDiffThreshold, "Acceptable angle diff threshold between stable edge parts")
+        ->default_val(20.0);
+    algo_params->add_option("--state-diff", ogr::kAngleDiffThreshold, "Acceptable diff angle between consecutive several steps")
+        ->default_val(25.0);
+    algo_params->add_option("--edges-union", union_strategy, "Union found edges strategy: union, intersection")
+        ->default_val("union");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -79,16 +96,19 @@ int main(int argc, char* argv[]) {
     LOG_INFO << "All graph vertexes were detected from image";
 
     // Step 3.2: Detecting edges
-    // Configure algo params
-    ogr::kStableStateAngleDiffLocalThreshold = 13.0;
-    ogr::kStableStateAngleDiffThreshold = 20.0;
-    ogr::kAngleDiffThreshold = 25.0;
-
     // Run algorithm of edges detecting
-    ogr_algo.DetectEdges();
-    ogr_algo.UnionFoundEdges();
+    ogr_algo.DetectEdges(vertex);
+
+    if (union_strategy == "union") {
+        ogr_algo.UnionFoundEdges();
+    } else {
+        ogr_algo.IntersectFoundEdges();
+    }
 
     // Dump algo results
+    if (!ogr::debug::DevDirPath.empty()) {
+        output_dir = std::filesystem::path(ogr::debug::DevDirPath);
+    }
     ogr_algo.DumpResultImages(output_dir);
 
     // Step 4.0: Print results

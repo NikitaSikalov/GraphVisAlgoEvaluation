@@ -59,7 +59,7 @@ namespace ogr::crawler {
         }
 
         while (!crawlers.empty()) {
-            debug::DebugDump(grm, false, source.id);
+            debug::DebugDump(grm, source.id);
 
             EdgeCrawlerPtr crawler = crawlers.top();
             crawlers.pop();

@@ -14,8 +14,9 @@ _Inspired by_ [Optical Graph Recognition](https://www.researchgate.net/publicati
 
 ### Dependencies
 
-1. [OpenCV](https://opencv.org/) –– open source CV library
-2. [plog](https://github.com/SergiusTheBest/plog) –– lightweight logging library
+1. [OpenCV](https://opencv.org/) — open source CV library
+2. [plog](https://github.com/SergiusTheBest/plog/tree/a6b5e5189e6d4de15cbb7fddc7dedfb187c8bdc3) — lightweight logging library
+3. [CLI11](https://github.com/CLIUtils/CLI11/tree/e1cef53f91044be9263e24eff1325eff94ef7f8b) — CLI parser lib
 
 ### Git submodules initialization
 ```
@@ -29,10 +30,28 @@ To build source code use cmake:
 mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make
 ```
 
-### Running
+### Usage
 
 ```
-./build/main <absolute input image path> <absolute output dir path>
+ ./build/main --help
+Aesthetic metrics evaluation of bundling visualization techniques
+Usage: ./build/main [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  -i,--input TEXT REQUIRED    Input image path
+  -o,--output TEXT REQUIRED   Output results dir path
+  --log-level TEXT [info]  (Env:LOG_LEVEL)
+                              Log level: info, debug, none
+  --dev-dir TEXT              Path dir to dev steps dump
+  --vertex UINT               Run algo only for particular vertex
+[Option Group: Algo params]
+  Parameters of ogr algorithm
+  Options:
+    --curvature FLOAT [13]      Acceptable Steps curvature
+    --stable-diff FLOAT [20]    Acceptable angle diff threshold between stable edge parts
+    --state-diff FLOAT [25]     Acceptable diff angle between consecutive several steps
+    --edges-union TEXT [union]  Union found edges strategy: union, intersection
 ```
 
 ### Results

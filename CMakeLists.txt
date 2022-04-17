@@ -11,6 +11,7 @@ include_directories(plog/include)
 include_directories(cli_parser/include)
 include_directories(lib)
 include_directories(lib/optical_graph_recognition)
+include_directories(thread_pool)
 
 add_subdirectory(lib/optical_graph_recognition)
 add_executable(main main.cpp)

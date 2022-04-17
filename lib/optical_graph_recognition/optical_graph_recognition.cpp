@@ -155,7 +155,7 @@ namespace ogr {
     void OpticalGraphRecognition::DetectEdges(std::optional<VertexId> vertex_id) {
         LOG_DEBUG << "Start detect edges";
 
-        debug::DebugDump(grm_, true);
+        debug::DebugDump(grm_);
         size_t edge_id_counter = 0;
 
         for (const auto&[_, vertex]: vertexes_) {
@@ -173,7 +173,7 @@ namespace ogr {
                 edges_[edge->id] = edge;
             }
 
-            debug::DebugDump(grm_, /*force*/false, vertex->id);
+            debug::DebugDump(grm_, vertex->id);
 
             utils::ForAll(grm_, [](const point::PointPtr& point) {
                 if (point::IsFilledPoint(point)) {
@@ -185,7 +185,7 @@ namespace ogr {
                 }
             });
 
-            debug::DebugDump(grm_, /*force*/true, vertex->id);
+            debug::DebugDump(grm_, vertex->id);
         }
     }
 

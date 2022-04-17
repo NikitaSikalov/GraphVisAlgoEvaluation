@@ -6,30 +6,28 @@
 #include <utils/geometry.h>
 #include <utils/opencv_utils.h>
 
+#include <thread_pool.hpp>
+
 #include <filesystem>
 
 
 namespace ogr::debug {
     std::string DevDirPath;
 
-    void DebugDump(const matrix::Grm& grm, const bool force, std::optional<VertexId> vertex_filter) {
-        return;
-
+    void DebugDump(const matrix::Grm& grm, std::optional<VertexId> vertex_filter) {
         static size_t seq_id = 0;
+        static thread_pool tp;
 
-        // Dump only in force mode
-        constexpr size_t kFrequency = std::numeric_limits<size_t>::max();
+        if (DevDirPath.empty()) {
+            return;
+        }
 
         const std::filesystem::path dev_dir(DevDirPath);
         if (!seq_id) {
             std::filesystem::remove_all(dev_dir);
             std::filesystem::create_directories(dev_dir);
         }
-
         seq_id++;
-        if (seq_id % kFrequency != 0 && !force) {
-            return;
-        }
 
         const std::filesystem::path output = dev_dir / (std::to_string(seq_id) + ".png");
 
@@ -37,7 +35,9 @@ namespace ogr::debug {
                 ? opencv::Grm2CvMat(grm, utils::EdgePointFilterWithSourceVertex{*vertex_filter})
                 : opencv::Grm2CvMat(grm);
 
-        cv::imwrite(output, image);
+        tp.push_task([=]() {
+            cv::imwrite(output, image);
+        });
     }
 
     std::string DebugDump(const point::Point& point) {
