@@ -53,6 +53,9 @@ namespace ogr {
         void CalculateEdgesLength();
 
     private:
+        void ProcessSingleEdgeLength(EdgePtr edge);
+
+    private:
         static EdgePtr ChooseBestEdge(EdgePtr e1, EdgePtr e2);
     };
 }

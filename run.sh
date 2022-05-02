@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -ex
+
 IMAGE="bundling"
 LOG_LEVEL="info"
 SAMPLE=2

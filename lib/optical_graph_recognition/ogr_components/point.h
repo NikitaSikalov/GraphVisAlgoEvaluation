@@ -25,7 +25,9 @@ namespace ogr::point {
 
     using FilledPointPtr = std::shared_ptr<FilledPoint>;
     using VertexPointPtr = std::shared_ptr<VertexPoint>;
+
     using EdgePointPtr = std::shared_ptr<EdgePoint>;
+    using EdgePointWeakPtr = std::weak_ptr<EdgePoint>;
 
     struct IGraphRecognitionPoint {
         const size_t row;

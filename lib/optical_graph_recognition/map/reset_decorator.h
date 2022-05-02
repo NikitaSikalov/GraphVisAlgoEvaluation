@@ -10,14 +10,23 @@ namespace ogr::map {
         using KeyType = typename IMap<Value, Keys...>::KeyType;
 
     public:
-        explicit ResetMapDecorator(IMap<Value, Keys...>& map) : map_(map) {}
+        explicit ResetMapDecorator(CompositeMap<Value, Keys...>&& map) : map_(std::move(map)) {}
 
         bool Contains(Keys... key) const override {
             return map_.Contains(key...);
         }
 
+        bool Contains(const KeyType& key) const override {
+            return map_.Contains(key);
+        }
+
         Value& operator()(Keys... key) override {
+            used_(key...) = true;
             return map_(key...);
+        }
+
+        Value& operator[](const KeyType& key) override {
+            return map_[key];
         }
 
         void Clear() override {
@@ -27,7 +36,7 @@ namespace ogr::map {
         void TryReset() {
             if (++counter_ == ResetThreshold) {
                 for (auto& [key, value] : map_) {
-                    if (!used_.contains(key)) {
+                    if (!used_.Contains(key)) {
                         value = Value();
                     }
                 }
@@ -44,8 +53,8 @@ namespace ogr::map {
         }
 
     private:
-        IMap<Value, Keys...>& map_;
-        std::unordered_set<KeyType> used_;
+        CompositeMap<Value, Keys...> map_;
+        CompositeMap<bool, Keys...> used_;
         uint64_t counter_{0};
     };
 }

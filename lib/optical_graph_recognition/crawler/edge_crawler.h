@@ -116,7 +116,11 @@ namespace ogr::crawler {
             StepPtr step = current_path_node->GetStep();
             edge->irregularity = std::max(edge->irregularity, current_path_node->GetDiffAngleWithPrevStableState());
 
-            for (point::PointPtr step_point : step->GetPoints()) {
+            // Reverse points in step to support right points ordering
+            auto step_points = step->GetPoints();
+            std::reverse(step_points.begin(), step_points.end());
+
+            for (point::PointPtr step_point : step_points) {
                 // Attention! Point in grm can be different from point in step!
                 point::PointPtr point = grm[step_point->row][step_point->column];
                 if (point::IsPortPoint(point)) {

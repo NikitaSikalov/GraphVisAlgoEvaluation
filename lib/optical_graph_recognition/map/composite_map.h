@@ -24,7 +24,9 @@ namespace ogr::map {
 
     public:
         virtual bool Contains(Keys... keys) const = 0;
+        virtual bool Contains(const KeyType& key) const = 0;
         virtual Value& operator()(Keys... keys) = 0;
+        virtual Value& operator[](const KeyType& key) = 0;
         virtual void Clear() = 0;
 
         virtual typename std::unordered_map<KeyType, Value>::iterator begin() = 0;
@@ -41,8 +43,16 @@ namespace ogr::map {
             return map_.contains(key);
         }
 
+        bool Contains(const KeyType& key) const override {
+            return map_.contains(key);
+        }
+
         Value& operator()(Keys... keys) override {
             auto key = MakeCompositeKey(keys...);
+            return map_[key];
+        }
+
+        Value& operator[](const KeyType& key) override {
             return map_[key];
         }
 

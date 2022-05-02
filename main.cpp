@@ -117,5 +117,8 @@ int main(int argc, char* argv[]) {
     LOG_INFO << "Number of vertexes is " << ogr_algo.GetVertexes().size();
     LOG_INFO << "Number of edges is " << ogr_algo.GetEdges().size();
 
+    // Step 5: Detect bundling
+    ogr_algo.BuildEdgeBundlingMap();
+
     return 0;
 }

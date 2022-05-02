@@ -55,4 +55,17 @@ namespace ogr {
             }
         }
     };
+
+    namespace point {
+        inline std::set<EdgeId> GetEdgesSet(point::EdgePointPtr edge_point) {
+            std::set<EdgeId> edges;
+
+            for (auto edge_weak_ptr : edge_point->edges) {
+                EdgePtr edge_ptr = edge_weak_ptr.lock();
+                edges.insert(edge_ptr->id);
+            }
+
+            return edges;
+        }
+    }
 }

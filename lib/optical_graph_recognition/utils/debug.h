@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <optional>
+#include <tuple>
 
 namespace ogr::crawler {
     struct IStep;
@@ -25,4 +26,16 @@ namespace ogr::debug {
     std::string DebugDump(const crawler::IStep&);
     std::string DebugDump(const crawler::IStepTreeNode&);
     std::string DebugDump(const crawler::IEdgeCrawler&);
+
+    template <typename... TupleArgs>
+    inline std::string DebugDump(const std::tuple<TupleArgs...>& data) {
+        std::stringstream ss;
+        std::apply([&ss](auto... v){
+            ss << "(";
+            (..., (ss << " " << v));
+            ss << " )";
+        }, data);
+
+        return ss.str();
+    }
 }

@@ -4,6 +4,7 @@
 #include <utils/debug.h>
 #include <crawler/edges_detector.h>
 #include <algo_utils/gluer.h>
+#include <algo_utils/sampling.h>
 #include <map/composite_map.h>
 #include <map/reset_decorator.h>
 
@@ -255,11 +256,41 @@ namespace ogr {
     }
 
     void OpticalGraphRecognition::BuildEdgeBundlingMap() {
-        std::abort(); // Not implemented
+        static constexpr size_t kBundlingLengthThreshold = 30;
+
+        CalculateEdgesLength();
+        for (auto& [key, len] : edge_lengths_) {
+            if (len >= kBundlingLengthThreshold) {
+                bundling_map_[key] = true;
+            }
+        }
     }
 
     void OpticalGraphRecognition::CalculateEdgesLength() {
-        std::abort(); // Not implemented
+        for (auto [_, edge_ptr] : edges_) {
+            ProcessSingleEdgeLength(edge_ptr);
+        }
+    }
+
+    void OpticalGraphRecognition::ProcessSingleEdgeLength(EdgePtr edge) {
+        static constexpr size_t kResetMapDecoratorThreshold = 3;
+
+        map::ResetMapDecorator<kResetMapDecoratorThreshold, size_t, EdgeId, EdgeId> lengths(map::CompositeMap<size_t, EdgeId, EdgeId>{});
+
+        for (point::EdgePointWeakPtr weak_point : edge->points) {
+            point::EdgePointPtr point = weak_point.lock();
+            auto edges = point::GetEdgesSet(point);
+            auto edge_pairs = algo::GetUniquePairs(edges);
+            for (auto& [e1, e2] : edge_pairs) {
+                edge_lengths_(e1, e2) = std::max(++lengths(e1, e2), edge_lengths_(e1, e2));
+            }
+
+            for (auto& e : edges) {
+                edge_lengths_(e, e) = std::max(++lengths(e, e), edge_lengths_(e, e));
+            }
+
+            lengths.TryReset();
+        }
     }
 
 }
