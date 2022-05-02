@@ -4,6 +4,8 @@
 #include <utils/debug.h>
 #include <crawler/edges_detector.h>
 #include <algo_utils/gluer.h>
+#include <map/composite_map.h>
+#include <map/reset_decorator.h>
 
 #include <plog/Log.h>
 
