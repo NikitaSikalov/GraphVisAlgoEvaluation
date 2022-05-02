@@ -1,9 +1,9 @@
 #include "optical_graph_recognition.h"
 
-#include <utils/disjoint_set.h>
 #include <utils/stack_vector.h>
 #include <utils/debug.h>
 #include <crawler/edges_detector.h>
+#include <algo_utils/gluer.h>
 
 #include <plog/Log.h>
 
@@ -50,30 +50,7 @@ namespace ogr {
     void OpticalGraphRecognition::DetectVertexes(std::function<bool(point::PointPtr)> is_vertex) {
         LOG_DEBUG << "Detect vertexes process start";
 
-        using SetPtr = std::unique_ptr<utils::DisjointSet>;
-        std::unordered_map<point::Point *, SetPtr> points_mapping;
-        size_t vertex_id_counter = 0;
-        iterator::Neighbourhood8 neighbourhood;
-
-        auto process_vertex_point = [&](const point::PointPtr &point) {
-            utils::StackVector<utils::DisjointSet *, 9> sets;
-            for (const point::PointPtr &neighbour: neighbourhood(point, grm_)) {
-                if (points_mapping.contains(neighbour.get())) {
-                    sets.PushBack(points_mapping[neighbour.get()].get());
-                }
-            }
-
-            SetPtr new_set = std::make_unique<utils::DisjointSet>(vertex_id_counter++);
-
-            if (!sets.Empty()) {
-                sets.PushBack(new_set.get());
-                utils::MergeDisjointSets(sets);
-            }
-
-            points_mapping[point.get()] = std::move(new_set);
-        };
-
-        LOG_DEBUG << "Building vertexes sets points...";
+        algo::PointsGluer<iterator::Neighbourhood8> gluer(grm_);
 
         utils::ForAll(grm_, [&](point::PointPtr &point) {
             // Consider only filled points
@@ -82,30 +59,20 @@ namespace ogr {
             }
 
             if (is_vertex(point)) {
-                process_vertex_point(point);
+                gluer.AddPoint(point);
             }
         });
-
-        VertexId next_vertex_id = 0;
-        using SetId = size_t;
-        std::unordered_map<SetId, VertexId> id_mapping;
 
         LOG_DEBUG << "Building vertexes objects from vertex points";
 
         utils::ForAll(grm_, [&](point::PointPtr &point) {
-            if (!points_mapping.contains(point.get())) {
+            if (!gluer.ContainsPoint(point)) {
                 return;
             }
 
             LOG_DEBUG << "Process vertex point: " << debug::DebugDump(*point);
 
-            SetId set_id = points_mapping[point.get()]->GetId();
-
-            if (!id_mapping.contains(set_id)) {
-                id_mapping[set_id] = next_vertex_id;
-                next_vertex_id++;
-            }
-            VertexId vid = id_mapping[set_id];
+            VertexId vid = gluer.GetGroupId(point);
 
             if (!vertexes_.contains(vid)) {
                 vertexes_[vid] = std::make_shared<Vertex>(vid);
