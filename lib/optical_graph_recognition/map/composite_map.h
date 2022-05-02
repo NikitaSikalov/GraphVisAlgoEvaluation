@@ -17,12 +17,6 @@ namespace ogr::map {
     template <typename... Keys>
     inline std::tuple<Keys...> MakeCompositeKey(Keys... keys);
 
-    // Composite key generators definitions
-    template <>
-    inline std::tuple<uint64_t, uint64_t> MakeCompositeKey(uint64_t key1, uint64_t key2) {
-        return std::make_tuple(std::min(key1, key2), std::max(key1, key2));
-    }
-
     template <typename Value, typename... Keys>
     class IMap {
     public:
@@ -40,6 +34,7 @@ namespace ogr::map {
     template <typename Value, typename... Keys>
     class CompositeMap : public IMap<Value, Keys...> {
         using KeyType = typename IMap<Value, Keys...>::KeyType;
+
     public:
         bool Contains(Keys... keys) const override {
             auto key = MakeCompositeKey(keys...);
@@ -64,6 +59,6 @@ namespace ogr::map {
         }
 
     private:
-        std::unordered_map<typename IMap<Value, Keys...>::KeyType, Value> map_;
+        std::unordered_map<KeyType, Value> map_;
     };
 }

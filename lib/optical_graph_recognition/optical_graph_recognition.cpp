@@ -253,4 +253,13 @@ namespace ogr {
             cv::imwrite(image_path, mat);
         }
     }
+
+    void OpticalGraphRecognition::BuildEdgeBundlingMap() {
+        std::abort(); // Not implemented
+    }
+
+    void OpticalGraphRecognition::CalculateEdgesLength() {
+        std::abort(); // Not implemented
+    }
+
 }
