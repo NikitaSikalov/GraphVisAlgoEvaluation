@@ -4,6 +4,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_library(ogr
         optical_graph_recognition.cpp
+        reporter.cpp
         algo_params/params.cpp
         crawler/step.cpp
         crawler/edge_crawler.cpp

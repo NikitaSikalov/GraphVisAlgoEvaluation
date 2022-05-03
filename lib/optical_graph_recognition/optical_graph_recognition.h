@@ -7,6 +7,7 @@
 #include <map/composite_map.h>
 
 #include <opencv2/opencv.hpp>
+#include <tabulate/table.hpp>
 
 #include <unordered_map>
 #include <optional>
@@ -23,6 +24,7 @@ namespace ogr {
     }
 
     class OpticalGraphRecognition {
+        friend void MakeReport(OpticalGraphRecognition& baseline, std::vector<OpticalGraphRecognition> algos);
     public:
         explicit OpticalGraphRecognition(const cv::Mat& source_graph);
 
@@ -37,16 +39,20 @@ namespace ogr {
         void BuildEdgeBundlingMap();
         void MarkCrossingsPoints();
 
-        void DumpResultImages(const std::filesystem::path output_dir, std::optional<VertexId> vertex = std::nullopt);
-        void PrintResults();
+        void DumpResultImages(const std::filesystem::path& output_dir, std::optional<VertexId> vertex = std::nullopt);
+        tabulate::Table GetGeneralData(const std::string& title);
+        tabulate::Table GetExtendedGeneralData(const std::string& title);
+        tabulate::Table GetEdgesInfo(const std::string& title);
 
     private:
         matrix::GraphRecognitionMatrix grm_;
         std::unordered_map<VertexId, VertexPtr> vertexes_;
         std::unordered_map<EdgeId, EdgePtr> edges_;
+        std::unordered_map<uint64_t, std::vector<point::PointPtr>> crossing_areas_;
 
         map::CompositeMap<bool, EdgeId, EdgeId> bundling_map_;
         map::CompositeMap<size_t, EdgeId, EdgeId> edge_lengths_;
+        map::CompositeMap<EdgeId, VertexId, VertexId> adjacency_map_;
 
     private:
         void DetectPortPoints();

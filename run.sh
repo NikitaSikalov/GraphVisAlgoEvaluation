@@ -3,7 +3,7 @@
 set -ex
 
 IMAGE="bundling"
-LOG_LEVEL="info"
+LOG_LEVEL="none"
 SAMPLE=2
 VERTEX=2
 
@@ -20,8 +20,8 @@ make -C build -j
 
 # Release, process all vertexes (bundling version)
 LOG_LEVEL=$LOG_LEVEL ./build/main \
-  --input ./samples/$SAMPLE/$IMAGE.png \
-  --output ./results/$SAMPLE/$IMAGE \
+  --input ./samples/$SAMPLE \
+  --output ./results/$SAMPLE \
   --curvature 13.0 \
   --stable-diff 20 \
   --state-diff 40

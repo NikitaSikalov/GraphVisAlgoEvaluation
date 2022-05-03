@@ -20,11 +20,12 @@ namespace ogr::algo {
 
         void AddPoint(point::PointPtr point) {
             static SetId set_counter = 0;
+            points_.push_back(point);
 
             std::vector<Set*> sets;
             for (const point::PointPtr neighbour : ngh_(point, grm_)) {
-                if (points_.contains(neighbour.get())) {
-                    sets.push_back(points_[neighbour.get()].get());
+                if (points_map_.contains(neighbour.get())) {
+                    sets.push_back(points_map_[neighbour.get()].get());
                 }
             }
 
@@ -34,7 +35,7 @@ namespace ogr::algo {
                 utils::MergeDisjointSets(sets);
             }
 
-            points_[point.get()] = std::move(new_set);
+            points_map_[point.get()] = std::move(new_set);
         }
 
         uint64_t GetGroupId(point::PointPtr point) {
@@ -42,7 +43,7 @@ namespace ogr::algo {
                 throw std::runtime_error{"Gluer does not contain point"};
             }
 
-            SetId set_id = points_[point.get()]->GetId();
+            SetId set_id = points_map_[point.get()]->GetId();
             if (!ids_.contains(set_id)) {
                 ids_[set_id] = group_id_counter_++;
             }
@@ -50,14 +51,19 @@ namespace ogr::algo {
             return ids_[set_id];
         }
 
+        const std::vector<point::PointPtr>& GetPoints() const {
+            return points_;
+        }
+
         bool ContainsPoint(point::PointPtr point) const {
-            return points_.contains(point.get());
+            return points_map_.contains(point.get());
         }
 
     private:
         matrix::Grm& grm_;
         Neighbourhood ngh_;
-        std::unordered_map<point::Point*, SetPtr> points_;
+        std::unordered_map<point::Point*, SetPtr> points_map_;
+        std::vector<point::PointPtr> points_;
 
         std::unordered_map<SetId, uint64_t> ids_;
         uint64_t group_id_counter_{0};

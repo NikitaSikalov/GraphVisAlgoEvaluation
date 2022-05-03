@@ -216,6 +216,10 @@ namespace ogr {
 
         edges_ = std::move(next_edges_);
         ClearGrmFromUnusedEdgePoints();
+
+        for (const auto& [eid, edge] : edges_) {
+            adjacency_map_(edge->v1, edge->v2) = eid;
+        }
     }
 
     EdgePtr OpticalGraphRecognition::ChooseBestEdge(EdgePtr e1, EdgePtr e2) {
@@ -241,7 +245,7 @@ namespace ogr {
         });
     }
 
-    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path output_dir, std::optional<VertexId> filter_vertex) {
+    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path& output_dir, std::optional<VertexId> filter_vertex) {
         const std::string base_name = "vertex_";
         for (auto& [vid, vertex] : vertexes_) {
             if (filter_vertex.has_value() && vertex->id != *filter_vertex) {
@@ -322,6 +326,10 @@ namespace ogr {
                 edge_point->MarkAsCrossing();
             }
         });
+
+        for (point::PointPtr point : gluer.GetPoints()) {
+            crossing_areas_[gluer.GetGroupId(point)].push_back(point);
+        }
     }
 
     bool OpticalGraphRecognition::IsCrossingPoint(const point::EdgePointPtr& point) {
@@ -348,20 +356,37 @@ namespace ogr {
         return ids;
     }
 
-    void OpticalGraphRecognition::PrintResults() {
+    tabulate::Table OpticalGraphRecognition::GetGeneralData(const std::string &title) {
         using namespace tabulate;
         using Row_t = Table::Row_t;
 
         Table results;
-        results.add_row({"Ogr algo results"}).format().width(100).font_align(FontAlign::center);
+        results.add_row({title});
 
-        results[0].format()
-                .font_color(Color::cyan)
-                .font_style({FontStyle::bold})
-                .font_align(FontAlign::center);
+        Table general_info;
+        general_info.add_row({"Number of vertexes", std::to_string(vertexes_.size())});
+        general_info.add_row({"Number of edges", std::to_string(edges_.size())});
+        general_info.add_row({"Number of edge crossings", std::to_string(crossing_areas_.size())});
+
+        results.add_row(Row_t{general_info});
+
+        return results;
+    }
+
+    tabulate::Table OpticalGraphRecognition::GetExtendedGeneralData(const std::string &title) {
+        // TODO: extend stub
+        return GetGeneralData(title);
+    }
+
+    tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title) {
+        using namespace tabulate;
+        using Row_t = Table::Row_t;
+
+        Table results;
+        results.add_row({title});
 
         Table edges;
-        edges.add_row({"Edge ID", "Source", "Sink", "Bundled with"});
+        edges.add_row({"Edge ID", "Source", "Sink", "Edge length", "Bundled with"});
 
         auto edges_ids = GetEdgesIds();
         for (EdgeId edge_id : edges_ids) {
@@ -372,12 +397,22 @@ namespace ogr {
                     ss << j << ", ";
                 }
             }
-            edges.add_row({std::to_string(edge_id), std::to_string(edge->v1), std::to_string(edge->v2), ss.str()});
+            std::string s_string = ss.str();
+            if (!s_string.empty()) {
+                s_string.resize(s_string.size() - 2);
+            }
+
+            edges.add_row({
+                  std::to_string(edge_id),
+                  std::to_string(edge->v1),
+                  std::to_string(edge->v2),
+                  std::to_string(edge_lengths_(edge_id, edge_id)),
+                  s_string
+            });
         }
 
         results.add_row(Row_t{edges});
 
-        std::cout << results << std::endl;
+        return results;
     }
-
 }

@@ -39,16 +39,19 @@ Usage: ./build/main [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -i,--input TEXT REQUIRED    Input image path
+  -i,--input TEXT REQUIRED    Input images dir path
+  -b,--baseline-name TEXT [baseline.png] 
+                              Input image baseline
   -o,--output TEXT REQUIRED   Output results dir path
   --log-level TEXT [info]  (Env:LOG_LEVEL)
                               Log level: info, debug, none
   --dev-dir TEXT              Path dir to dev steps dump
   --vertex UINT               Run algo only for particular vertex
+  --dump-intermediate [0]     
 [Option Group: Algo params]
   Parameters of ogr algorithm
   Options:
-    --curvature FLOAT [13]      Acceptable Steps curvature
+    --curvature FLOAT [13]      Acceptable steps curvature
     --stable-diff FLOAT [20]    Acceptable angle diff threshold between stable edge parts
     --state-diff FLOAT [25]     Acceptable diff angle between consecutive several steps
     --edges-union TEXT [union]  Union found edges strategy: union, intersection
