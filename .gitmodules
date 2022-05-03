@@ -7,3 +7,6 @@
 [submodule "thread_pool"]
 	path = thread_pool
 	url = git@github.com:bshoshany/thread-pool.git
+[submodule "tabulate"]
+	path = tabulate
+	url = git@github.com:p-ranav/tabulate.git
