@@ -7,10 +7,17 @@
 
 namespace ogr::opencv {
     namespace {
-        bool ContainsVertexPointInNeighbourhood(point::PointPtr point, const matrix::Grm& grm) {
-            iterator::Neighbourhood4 neighbourhood8;
-            for (point::PointPtr point : neighbourhood8(point, grm)) {
-                if (point::IsVertexPoint(point)) {
+        template <typename Predicate, typename Neighbourhood = iterator::Neighbourhood8>
+        bool ContainsPointInNeighbourhoodWithPredicate(
+                point::PointPtr point,
+                const matrix::Grm& grm,
+                Predicate predicate,
+                const utils::IPointFilter& point_filter
+        ) {
+            Neighbourhood ngh;
+            for (point::PointPtr neighbour : ngh(point, grm)) {
+                point::PointPtr filtered_neighbour = point_filter(neighbour);
+                if (predicate(filtered_neighbour)) {
                     return true;
                 }
             }
@@ -52,21 +59,24 @@ namespace ogr::opencv {
         const cv::Vec3b vertex_point_color{0, 0, 255};
         const cv::Vec3b marked_point_color{33, 111, 255};
         const cv::Vec3b edge_point_color{63, 253, 255};
+        const cv::Vec3b crossing_point_color{255, 133, 5};
 
         for (size_t row = 0; row < matrix::Rows(grm); ++row) {
             for (size_t col = 0; col < matrix::Columns(grm); ++col) {
                 const cv::Point cv_point(col, row);
                 const point::PointPtr point = point_filter(grm[row][col]);
-                if (point::IsVertexPoint(point)) {
+                if (ContainsPointInNeighbourhoodWithPredicate(point, grm, point::IsVertexPoint, point_filter)) {
                     cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
+                } else if (point::IsVertexPoint(point)) {
+                    cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
+                } else if (point::IsCrossingPoint(point)) {
+                    cv_image.at<cv::Vec3b>(cv_point) = crossing_point_color;
                 } else if (point::IsEdgePoint(point)) {
                     cv_image.at<cv::Vec3b>(cv_point) = edge_point_color;
                 } else if (point::IsMarkedPoint(point)) {
                     cv_image.at<cv::Vec3b>(cv_point) = marked_point_color;
                 } else if (!point->IsEmpty()) {
                     cv_image.at<cv::Vec3b>(cv_point) = filled_point_color;
-                } else if (ContainsVertexPointInNeighbourhood(point, grm)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
                 }
             }
         }

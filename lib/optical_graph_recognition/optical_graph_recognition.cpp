@@ -9,6 +9,7 @@
 #include <map/reset_decorator.h>
 
 #include <plog/Log.h>
+#include <tabulate/table.hpp>
 
 #include <string>
 
@@ -253,10 +254,25 @@ namespace ogr {
             LOG_INFO << "Dump detected edges for vertex with id = " << vid;
             cv::imwrite(image_path, mat);
         }
+
+        const std::string edges_base_name = "edge_";
+        for (EdgeId eid : GetEdgesIds()) {
+            std::filesystem::path image_path = output_dir / (edges_base_name + std::to_string(eid) + ".png");
+            cv::Mat mat = opencv::Grm2CvMat(grm_, utils::EdgePointFilter{eid});
+
+            LOG_INFO << "Dump edge image with id = " << eid;
+            cv::imwrite(image_path, mat);
+        }
+
+        const std::string full_name = "full";
+        std::filesystem::path image_path = output_dir / (full_name + ".png");
+        LOG_INFO << "Dump full image without filters";
+        cv::Mat mat = opencv::Grm2CvMat(grm_);
+        cv::imwrite(image_path, mat);
     }
 
     void OpticalGraphRecognition::BuildEdgeBundlingMap() {
-        static constexpr size_t kBundlingLengthThreshold = 30;
+        static constexpr size_t kBundlingLengthThreshold = 50;
 
         CalculateEdgesLength();
         for (auto& [key, len] : edge_lengths_) {
@@ -291,6 +307,77 @@ namespace ogr {
 
             lengths.TryReset();
         }
+    }
+
+    void OpticalGraphRecognition::MarkCrossingsPoints() {
+        algo::PointsGluer<iterator::Neighbourhood8> gluer(grm_);
+        utils::ForAll(grm_, [&](const point::PointPtr& point) {
+            if (!point::IsEdgePoint(point)) {
+                return;
+            }
+
+            const point::EdgePointPtr edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
+            if (IsCrossingPoint(edge_point)) {
+                gluer.AddPoint(edge_point);
+                edge_point->MarkAsCrossing();
+            }
+        });
+    }
+
+    bool OpticalGraphRecognition::IsCrossingPoint(const point::EdgePointPtr& point) {
+        auto edges = point::GetEdgesSet(point);
+        auto edge_pairs = algo::GetUniquePairs(edges);
+        for (const auto& [e1, e2] : edge_pairs) {
+            if (!bundling_map_.Contains(e1, e2)) {
+                LOG_DEBUG << "Found crossing point: " << debug::DebugDump(*point) << " edge1 = " << e1 << " edge2 = " << e2;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    std::vector<EdgeId> OpticalGraphRecognition::GetEdgesIds() {
+        std::vector<EdgeId> ids;
+
+        for (const auto& [edge_id, _] : edges_) {
+            ids.push_back(edge_id);
+        }
+
+        std::sort(ids.begin(), ids.end());
+        return ids;
+    }
+
+    void OpticalGraphRecognition::PrintResults() {
+        using namespace tabulate;
+        using Row_t = Table::Row_t;
+
+        Table results;
+        results.add_row({"Ogr algo results"}).format().width(100).font_align(FontAlign::center);
+
+        results[0].format()
+                .font_color(Color::cyan)
+                .font_style({FontStyle::bold})
+                .font_align(FontAlign::center);
+
+        Table edges;
+        edges.add_row({"Edge ID", "Source", "Sink", "Bundled with"});
+
+        auto edges_ids = GetEdgesIds();
+        for (EdgeId edge_id : edges_ids) {
+            const EdgePtr& edge = edges_[edge_id];
+            std::stringstream ss;
+            for (EdgeId j : edges_ids) {
+                if (bundling_map_.Contains(edge_id, j) && j != edge_id) {
+                    ss << j << ", ";
+                }
+            }
+            edges.add_row({std::to_string(edge_id), std::to_string(edge->v1), std::to_string(edge->v2), ss.str()});
+        }
+
+        results.add_row(Row_t{edges});
+
+        std::cout << results << std::endl;
     }
 
 }

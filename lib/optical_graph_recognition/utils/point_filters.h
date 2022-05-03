@@ -55,4 +55,25 @@ namespace ogr::utils {
             return std::make_shared<point::FilledPoint>(point->row, point->column);
         }
     };
+
+    struct EdgePointFilter : IPointFilter {
+        EdgeId edge_id;
+
+        explicit EdgePointFilter(EdgeId eid) : edge_id(eid) {}
+
+        point::PointPtr operator()(point::PointPtr point) const override {
+            if (!point::IsEdgePoint(point)) {
+                return point;
+            }
+
+            point::EdgePointPtr edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
+            for (const std::weak_ptr<Edge> edge : edge_point->edges) {
+                if (edge.lock()->id == edge_id) {
+                    return point;
+                }
+            }
+
+            return std::make_shared<point::FilledPoint>(point->row, point->column);
+        }
+    };
 }

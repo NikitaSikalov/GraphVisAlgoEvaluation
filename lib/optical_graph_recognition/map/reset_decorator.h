@@ -41,6 +41,7 @@ namespace ogr::map {
                     }
                 }
                 counter_ = 0;
+                used_.Clear();
             }
         }
 

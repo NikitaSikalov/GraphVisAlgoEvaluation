@@ -80,6 +80,17 @@ namespace ogr::point {
         using FilledPoint::FilledPoint;
 
         std::vector<std::weak_ptr<Edge>> edges;
+
+        bool IsCrossing() const {
+            return crossing_;
+        }
+
+        void MarkAsCrossing() {
+            crossing_ = true;
+        }
+
+    private:
+        bool crossing_{false};
     };
 
     inline utils::PlanarVector operator-(const Point& p1, const Point& p2) {
@@ -113,11 +124,20 @@ namespace ogr::point {
         return utils::Is<FilledPoint>(point.get());
     }
 
+    inline bool IsCrossingPoint(const PointPtr& point) {
+//        std::cerr << "CROSSING!" << std::endl;
+        return utils::Is<EdgePoint>(point.get()) && utils::As<EdgePoint>(point.get())->IsCrossing();
+    }
+
     inline void Unmark(const PointPtr& point) {
-        return utils::As<FilledPoint>(point.get())->ResetMark();
+        utils::As<FilledPoint>(point.get())->ResetMark();
     }
 
     inline void Mark(const PointPtr& point) {
-        return utils::As<FilledPoint>(point.get())->Mark();
+        utils::As<FilledPoint>(point.get())->Mark();
+    }
+
+    inline void MarkAsCrossing(const point::PointPtr& point) {
+        std::dynamic_pointer_cast<point::EdgePoint>(point)->MarkAsCrossing();
     }
 }

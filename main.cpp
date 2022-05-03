@@ -107,18 +107,21 @@ int main(int argc, char* argv[]) {
         ogr_algo.IntersectFoundEdges();
     }
 
+    // Step 4: Detect bundling
+    ogr_algo.BuildEdgeBundlingMap();
+
+    // Step 5: Aesthetics evaluation
+    ogr_algo.MarkCrossingsPoints();
+
+    // Step 5: Print results
+
     // Dump algo results
     if (!ogr::debug::DevDirPath.empty()) {
         output_dir = std::filesystem::path(ogr::debug::DevDirPath);
     }
     ogr_algo.DumpResultImages(output_dir, vertex);
 
-    // Step 4.0: Print results
-    LOG_INFO << "Number of vertexes is " << ogr_algo.GetVertexes().size();
-    LOG_INFO << "Number of edges is " << ogr_algo.GetEdges().size();
-
-    // Step 5: Detect bundling
-    ogr_algo.BuildEdgeBundlingMap();
+    ogr_algo.PrintResults();
 
     return 0;
 }

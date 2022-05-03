@@ -35,8 +35,10 @@ namespace ogr {
         void UnionFoundEdges();
         void IntersectFoundEdges();
         void BuildEdgeBundlingMap();
+        void MarkCrossingsPoints();
 
         void DumpResultImages(const std::filesystem::path output_dir, std::optional<VertexId> vertex = std::nullopt);
+        void PrintResults();
 
     private:
         matrix::GraphRecognitionMatrix grm_;
@@ -51,6 +53,8 @@ namespace ogr {
         void PostProcessEdges(bool intersect);
         void ClearGrmFromUnusedEdgePoints();
         void CalculateEdgesLength();
+        bool IsCrossingPoint(const point::EdgePointPtr&);
+        std::vector<EdgeId> GetEdgesIds();
 
     private:
         void ProcessSingleEdgeLength(EdgePtr edge);

@@ -18,7 +18,7 @@ namespace ogr::algo {
     public:
         explicit PointsGluer(matrix::Grm& grm) : grm_(grm) {}
 
-        void AddPoint(point::PointPtr& point) {
+        void AddPoint(point::PointPtr point) {
             static SetId set_counter = 0;
 
             std::vector<Set*> sets;
@@ -37,7 +37,7 @@ namespace ogr::algo {
             points_[point.get()] = std::move(new_set);
         }
 
-        uint64_t GetGroupId(point::PointPtr& point) {
+        uint64_t GetGroupId(point::PointPtr point) {
             if (!ContainsPoint(point)) {
                 throw std::runtime_error{"Gluer does not contain point"};
             }
@@ -50,7 +50,7 @@ namespace ogr::algo {
             return ids_[set_id];
         }
 
-        bool ContainsPoint(point::PointPtr& point) const {
+        bool ContainsPoint(point::PointPtr point) const {
             return points_.contains(point.get());
         }
 
