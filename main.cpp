@@ -16,8 +16,6 @@
 
 #include <filesystem>
 #include <optional>
-#include <thread>
-#include <mutex>
 
 
 ogr::OpticalGraphRecognition ProcessImage(
@@ -73,6 +71,10 @@ ogr::OpticalGraphRecognition ProcessImage(
     //        output_dir = std::filesystem::path(ogr::debug::DevDirPath);
     //    }
     std::filesystem::path output_dir = common_output_dir / input_img.stem();
+    if (!std::filesystem::exists(output_dir)) {
+        std::filesystem::create_directory(output_dir);
+    }
+
     ogr_algo.DumpResultImages(output_dir, vertex);
 
     return ogr_algo;

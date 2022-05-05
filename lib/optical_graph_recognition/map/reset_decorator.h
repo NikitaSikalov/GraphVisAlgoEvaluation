@@ -53,6 +53,10 @@ namespace ogr::map {
             return map_.end();
         }
 
+        size_t Size() const override {
+            return map_.Size();
+        }
+
     private:
         CompositeMap<Value, Keys...> map_;
         CompositeMap<bool, Keys...> used_;

@@ -24,15 +24,11 @@ namespace ogr {
     }
 
     class OpticalGraphRecognition {
-        friend void MakeReport(OpticalGraphRecognition& baseline, std::vector<OpticalGraphRecognition> algos);
     public:
         explicit OpticalGraphRecognition(const cv::Mat& source_graph);
 
         void DetectVertexes(std::function<bool(point::PointPtr)> is_vertex);
         void DetectEdges(std::optional<VertexId> vertex_id = std::nullopt);
-
-        const std::unordered_map<VertexId, VertexPtr>& GetVertexes() const;
-        const std::unordered_map<EdgeId, EdgePtr>& GetEdges() const;
 
         void UnionFoundEdges();
         void IntersectFoundEdges();
@@ -41,7 +37,7 @@ namespace ogr {
 
         void DumpResultImages(const std::filesystem::path& output_dir, std::optional<VertexId> vertex = std::nullopt);
         tabulate::Table GetGeneralData(const std::string& title);
-        tabulate::Table GetExtendedGeneralData(const std::string& title);
+        tabulate::Table GetExtendedGeneralData(const std::string& title, OpticalGraphRecognition& baseline);
         tabulate::Table GetEdgesInfo(const std::string& title);
 
     private:

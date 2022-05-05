@@ -28,6 +28,7 @@ namespace ogr::map {
         virtual Value& operator()(Keys... keys) = 0;
         virtual Value& operator[](const KeyType& key) = 0;
         virtual void Clear() = 0;
+        virtual size_t Size() const = 0;
 
         virtual typename std::unordered_map<KeyType, Value>::iterator begin() = 0;
         virtual typename std::unordered_map<KeyType, Value>::iterator end() = 0;
@@ -66,6 +67,10 @@ namespace ogr::map {
 
         typename std::unordered_map<KeyType, Value>::iterator end() override {
             return map_.end();
+        }
+
+        size_t Size() const override {
+            return map_.size();
         }
 
     private:

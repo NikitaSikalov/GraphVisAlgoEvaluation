@@ -20,13 +20,13 @@ namespace ogr {
                 .font_align(FontAlign::center);
 
         std::vector<Row_t::value_type> general_algo_infos;
-        general_algo_infos.emplace_back(baseline.GetGeneralData("Baseline algo vis"));
+        general_algo_infos.emplace_back(baseline.GetGeneralData("Baseline algo"));
         for (size_t i = 0; i < algos.size(); ++i) {
             const std::string title = std::string{"Algo "} + std::to_string(i);
-            general_algo_infos.emplace_back(algos[i].GetExtendedGeneralData(title));
+            general_algo_infos.emplace_back(algos[i].GetExtendedGeneralData(title, baseline));
         }
 
-        results.add_row({"Algos comparison"});
+        results.add_row({"Algorithms visualization comparison"});
         results[1].format().hide_border_bottom().font_color(Color::magenta).font_style({FontStyle::italic});
 
         Table subtable;
@@ -38,7 +38,10 @@ namespace ogr {
         for (size_t i = 0; i < algos.size(); ++i) {
             std::stringstream ss;
             ss << "Edges info for algo " << i;
+            results.add_row({ss.str()});
+            results[3 + i].format().hide_border_bottom().font_color(Color::cyan).font_style({FontStyle::italic});
             results.add_row(Row_t{algos[i].GetEdgesInfo(ss.str())});
+            results[3 + i + 1].format().hide_border_top();
         }
 
         std::cout << results << std::endl;

@@ -97,14 +97,6 @@ namespace ogr {
         DetectPortPoints();
     }
 
-    const std::unordered_map<VertexId, VertexPtr>& OpticalGraphRecognition::GetVertexes() const {
-        return vertexes_;
-    }
-
-    const std::unordered_map<EdgeId, EdgePtr>& OpticalGraphRecognition::GetEdges() const {
-        return edges_;
-    }
-
     void OpticalGraphRecognition::DetectPortPoints() {
         for (auto& [_, vertex] : vertexes_) {
             for (auto& point : vertex->points) {
@@ -364,26 +356,58 @@ namespace ogr {
         results.add_row({title});
 
         Table general_info;
+        general_info.format().hide_border();
         general_info.add_row({"Number of vertexes", std::to_string(vertexes_.size())});
         general_info.add_row({"Number of edges", std::to_string(edges_.size())});
         general_info.add_row({"Number of edge crossings", std::to_string(crossing_areas_.size())});
+
+        // TODO: remove crutch
+        general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
 
         results.add_row(Row_t{general_info});
 
         return results;
     }
 
-    tabulate::Table OpticalGraphRecognition::GetExtendedGeneralData(const std::string &title) {
-        // TODO: extend stub
-        return GetGeneralData(title);
-    }
-
-    tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title) {
+    tabulate::Table OpticalGraphRecognition::GetExtendedGeneralData(const std::string &title, OpticalGraphRecognition& baseline) {
         using namespace tabulate;
         using Row_t = Table::Row_t;
 
         Table results;
         results.add_row({title});
+
+        Table general_info;
+        general_info.format().hide_border();
+        general_info.add_row({"Number of vertexes", std::to_string(vertexes_.size())});
+        general_info.add_row({"Number of edges", std::to_string(edges_.size())});
+        general_info.add_row({"Number of edge crossings", std::to_string(crossing_areas_.size())});
+
+        const size_t bundled_edges_cnt = bundling_map_.Size() - edges_.size();
+        general_info.add_row({"Number of bundled edges", std::to_string(bundled_edges_cnt)});
+
+        size_t false_positive_connections = 0;
+        for (const auto& [vid1, v1] : baseline.vertexes_) {
+            for (const auto& [vid2, v2] : baseline.vertexes_) {
+                if (vid1 == vid2) {
+                    continue;
+                }
+
+                if (adjacency_map_.Contains(vid1, vid2) && !baseline.adjacency_map_.Contains(vid1, vid2)) {
+                    false_positive_connections++;
+                }
+            }
+        }
+        general_info.add_row({"Ambiguity (FP)", std::to_string(false_positive_connections)});
+
+        results.add_row(Row_t{general_info});
+
+        return results;
+    }
+
+    tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title) {
+        using namespace tabulate;
+        using Row_t = Table::Row_t;
 
         Table edges;
         edges.add_row({"Edge ID", "Source", "Sink", "Edge length", "Bundled with"});
@@ -411,8 +435,6 @@ namespace ogr {
             });
         }
 
-        results.add_row(Row_t{edges});
-
-        return results;
+        return edges;
     }
 }
