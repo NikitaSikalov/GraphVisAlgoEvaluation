@@ -69,7 +69,8 @@ namespace ogr::crawler {
 
     template <size_t StepMaxSize, size_t SubPathStepsSize>
     inline void EdgeCrawler<StepMaxSize, SubPathStepsSize>::Commit(StepPtr step) {
-        StepTreeNodePtr next_node = path_position_->MakeChild(step); // std::make_shared<PathNode>(step, path_position_);
+        StepTreeNodePtr next_node = path_position_->MakeChild(step);
+        point::DevMark(next_node->GetStep()->Back());
         path_position_ = next_node;
     }
 
@@ -132,6 +133,10 @@ namespace ogr::crawler {
                     edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
                 } else {
                     edge_point = std::make_shared<point::EdgePoint>(point->row, point->column);
+                    if (point::IsDevMarked(point)) {
+                        point::DevMark(edge_point);
+                    }
+
                     grm[point->row][point->column] = edge_point;
                 }
 

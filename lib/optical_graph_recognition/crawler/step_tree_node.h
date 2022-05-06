@@ -134,7 +134,7 @@ namespace ogr::crawler {
             return 0;
         }
 
-        return utils::AbsDiffAngles(parent_.lock()->GetStateAngle(), step_->GetDirectionAngle());
+        return utils::AbsDiffAngles(parent_.lock()->GetStep()->GetDirectionAngle(), step_->GetDirectionAngle());
     }
 
     template <size_t SubPathStepsSize>
@@ -174,6 +174,10 @@ namespace ogr::crawler {
             const double aligned_last_step_angle = utils::AlignAngle(last_step_angle, angle_);
             step_node->angle_ = utils::NormalizeAngle(
                     angle_ - (aligned_last_step_angle - aligned_step_angle) / SubPathStepsSize);
+
+//            LOG_DEBUG << "Angles: " << debug::DebugDump(*step_node);
+//            LOG_DEBUG << "angle_: " << angle_ << " => " << step_node->angle_;
+//            LOG_DEBUG << "step_actual_angle = " << step_actual_angle << " aligned_step_angle = " << aligned_step_angle << " last_step_angle = " << last_step_angle << " aligned_last_step_angle = " << aligned_last_step_angle;
         } while (false);
 
         step_node->stable_state_ = stable_state_;
@@ -212,7 +216,8 @@ namespace ogr::crawler {
         }
 
         // Check diff angles with previous stable state
-        if (GetDiffAngleWithPrevStableState() > kStableStateAngleDiffThreshold) {
+        LOG_DEBUG << "Check validity: " << debug::DebugDump(*this);
+        if (GetDiffAngleWithPrevStableState() >= kStableStateAngleDiffThreshold) {
             is_valid_ = false;
             return;
         }

@@ -41,6 +41,7 @@ namespace ogr::point {
 
     struct FilledPoint : IGraphRecognitionPoint {
         using IGraphRecognitionPoint::IGraphRecognitionPoint;
+        bool dev_mark = false;
 
         bool IsEmpty() const override {
             return false;
@@ -89,6 +90,10 @@ namespace ogr::point {
             crossing_ = true;
         }
 
+        void ResetCrossing() {
+            crossing_ = false;
+        }
+
     private:
         bool crossing_{false};
     };
@@ -125,7 +130,6 @@ namespace ogr::point {
     }
 
     inline bool IsCrossingPoint(const PointPtr& point) {
-//        std::cerr << "CROSSING!" << std::endl;
         return utils::Is<EdgePoint>(point.get()) && utils::As<EdgePoint>(point.get())->IsCrossing();
     }
 
@@ -139,5 +143,17 @@ namespace ogr::point {
 
     inline void MarkAsCrossing(const point::PointPtr& point) {
         std::dynamic_pointer_cast<point::EdgePoint>(point)->MarkAsCrossing();
+    }
+
+    inline void DevMark(const point::PointPtr& point) {
+        std::dynamic_pointer_cast<point::FilledPoint>(point)->dev_mark = true;
+    }
+
+    inline bool IsDevMarked(const point::PointPtr& point) {
+        if (point::FilledPointPtr filled_point = std::dynamic_pointer_cast<point::FilledPoint>(point)) {
+            return filled_point->dev_mark;
+        }
+
+        return false;
     }
 }

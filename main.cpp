@@ -18,15 +18,32 @@
 #include <optional>
 
 
-ogr::OpticalGraphRecognition ProcessImage(
-        const std::filesystem::path& input_img,
-        std::optional<ogr::VertexId> vertex,
-        std::string union_strategy,
-        const std::filesystem::path& common_output_dir
-) {
+using Fpath = std::filesystem::path;
+namespace FS = std::filesystem;
+
+struct OgrParams {
+    double curvature;
+    double stable_diff;
+    double state_diff;
+};
+
+struct InputCliParams {
+    Fpath input_dir;
+    std::string baseline_name;
+    Fpath output_dir;
+    std::string log_level;
+    std::optional<ogr::VertexId> vertex;
+    std::optional<std::string> filter;
+    std::string union_strategy;
+
+    OgrParams ogr_baseline_params;
+    OgrParams ogr_algo_params;
+};
+
+ogr::OpticalGraphRecognition ProcessImage(const std::filesystem::path& input_img, const OgrParams& ogr_params, const InputCliParams& input_params) {
+    // Step 1: Read image
     LOG_INFO << "Read input image: " << input_img;
 
-    // Step 1: Read image
     cv::Mat colored_image = cv::imread(input_img, cv::ImreadModes::IMREAD_COLOR);
     cv::Mat grayscale_image = cv::imread(input_img, cv::ImreadModes::IMREAD_GRAYSCALE);
 
@@ -38,7 +55,13 @@ ogr::OpticalGraphRecognition ProcessImage(
     LOG_INFO << "Image was thinned for morphological parsing";
 
     // Step 3.0: Morphological parsing graph image
-    ogr::OpticalGraphRecognition ogr_algo(thinning_image);
+    // Prepare ogr algo params
+    ogr::kStableStateAngleDiffLocalThreshold = ogr_params.curvature;
+    ogr::kStableStateAngleDiffThreshold = ogr_params.stable_diff;
+    ogr::kAngleDiffThreshold = ogr_params.state_diff;
+
+    ogr::OpticalGraphRecognition ogr_algo{thinning_image};
+    ogr_algo.UpdateIncUsage(colored_image);
 
     LOG_INFO << "Optical graph recognition initialized";
 
@@ -50,9 +73,9 @@ ogr::OpticalGraphRecognition ProcessImage(
 
     // Step 3.2: Detecting edges
     // Run algorithm of edges detecting
-    ogr_algo.DetectEdges(vertex);
+    ogr_algo.DetectEdges(input_params.vertex);
 
-    if (union_strategy == "union") {
+    if (input_params.union_strategy == "union") {
         ogr_algo.UnionFoundEdges();
     } else {
         ogr_algo.IntersectFoundEdges();
@@ -70,29 +93,21 @@ ogr::OpticalGraphRecognition ProcessImage(
     //    if (!ogr::debug::DevDirPath.empty()) {
     //        output_dir = std::filesystem::path(ogr::debug::DevDirPath);
     //    }
-    std::filesystem::path output_dir = common_output_dir / input_img.stem();
-    if (!std::filesystem::exists(output_dir)) {
-        std::filesystem::create_directory(output_dir);
+    Fpath output_dir = input_params.output_dir / input_img.stem();
+    if (!FS::exists(output_dir)) {
+        FS::create_directory(output_dir);
     }
 
-    ogr_algo.DumpResultImages(output_dir, vertex);
+    ogr_algo.DumpResultImages(output_dir, input_params.vertex);
 
     return ogr_algo;
 }
 
 
 int main(int argc, char* argv[]) {
-    using Fpath = std::filesystem::path;
-    namespace FS = std::filesystem;
-
     CLI::App app{"Aesthetic metrics evaluation of bundling visualization techniques"};
 
-    Fpath input_dir;
-    std::string baseline_name;
-    Fpath output_dir;
-    std::string log_level;
-    std::optional<ogr::VertexId> vertex;
-    std::string union_strategy;
+    InputCliParams cli_params;
 
     auto check_path = [](const std::string& path) {
         std::string error_msg;
@@ -104,64 +119,93 @@ int main(int argc, char* argv[]) {
         return error_msg;
     };
 
-    app.add_option("-i,--input", input_dir, "Input images dir path")
+    // General required params
+    app.add_option("-i,--input", cli_params.input_dir, "Input images dir path")
         ->required()
         ->check(check_path);
-    app.add_option("-b,--baseline-name", baseline_name, "Input image baseline")
-        ->default_val("baseline.png");
-    app.add_option("-o,--output", output_dir, "Output results dir path")
+    app.add_option("-b,--baseline-name", cli_params.baseline_name, "Input image baseline")
+        ->default_val("baseline");
+    app.add_option("-o,--output", cli_params.output_dir, "Output results dir path")
         ->required()
         ->check(check_path);
-    app.add_option("--log-level", log_level, "Log level: info, debug, none")
+
+    // Infra/Dev params
+    app.add_option("--log-level", cli_params.log_level, "Log level: info, debug, none")
         ->envname("LOG_LEVEL")
         ->default_val("info");
     app.add_option("--dev-dir", ogr::debug::DevDirPath, "Path dir to dev steps dump")
         ->check(check_path);
-    app.add_option("--vertex", vertex, "Run algo only for particular vertex")
+    app.add_option("--vertex", cli_params.vertex, "Run algo only for particular vertex")
+        ->default_val(std::nullopt);
+    app.add_option("--filter", cli_params.filter, "Run algo only for particular image file")
         ->default_val(std::nullopt);
     app.add_flag("--dump-intermediate", ogr::debug::DumpIntermediateResults)
         ->default_val(false);
-    auto* algo_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
-    algo_params->add_option("--curvature", ogr::kStableStateAngleDiffLocalThreshold, "Acceptable steps curvature")
-        ->default_val(13.0);
-    algo_params->add_option("--stable-diff", ogr::kStableStateAngleDiffThreshold, "Acceptable angle diff threshold between stable edge parts")
+
+    // Ogr algo params
+    auto* algo_input_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
+
+    // Add ogr algo params for bundling algorithms (with curved edges; more flexible)
+    algo_input_params->add_option("--curvature", cli_params.ogr_algo_params.curvature, "Acceptable steps curvature")
         ->default_val(20.0);
-    algo_params->add_option("--state-diff", ogr::kAngleDiffThreshold, "Acceptable diff angle between consecutive several steps")
-        ->default_val(25.0);
-    algo_params->add_option("--edges-union", union_strategy, "Union found edges strategy: union, intersection")
+    algo_input_params->add_option("--stable-diff", cli_params.ogr_algo_params.stable_diff, "Acceptable angle diff threshold between stable edge parts")
+        ->default_val(15.0);
+    algo_input_params->add_option("--state-diff", cli_params.ogr_algo_params.state_diff, "Acceptable diff angle between consecutive several steps")
+        ->default_val(40.0);
+
+    // Add ogr params for baseline visualisation (with straight edges; more strict)
+    algo_input_params->add_option("--baseline-curvature", cli_params.ogr_baseline_params.curvature, "Acceptable steps curvature (baseline)")
+        ->default_val(13.0);
+    algo_input_params->add_option("--baseline-stable-diff", cli_params.ogr_baseline_params.stable_diff, "Acceptable angle diff threshold between stable edge parts (baseline)")
+        ->default_val(9.0);
+    algo_input_params->add_option("--baseline-state-diff", cli_params.ogr_baseline_params.state_diff, "Acceptable diff angle between consecutive several steps (baseline)")
+        ->default_val(30.0);
+
+    // Edges union/intersection strategy
+    algo_input_params->add_option("--edges-union", cli_params.union_strategy, "Union found edges strategy: union, intersection")
         ->default_val("union");
 
     CLI11_PARSE(app, argc, argv);
 
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
 
-    if (log_level == "debug") {
+    if (cli_params.log_level == "debug") {
         plog::init(plog::debug, &consoleAppender);
-    } else if (log_level == "info") {
+    } else if (cli_params.log_level == "info") {
         plog::init(plog::info, &consoleAppender);
     } else {
         plog::init(plog::none, &consoleAppender);
     }
 
-    Fpath baseline_path{input_dir / baseline_name};
-    if (!FS::exists(baseline_path)) {
-        throw std::runtime_error{"Baseline not valid path"};
-    }
-
     std::vector<Fpath> algo_images_paths;
-    for (const auto file : std::filesystem::directory_iterator{input_dir}) {
+    Fpath baseline_path;
+    for (const auto file : FS::directory_iterator{cli_params.input_dir}) {
         Fpath file_path = file.path();
-        if (file_path.filename() == baseline_name) {
+        const std::string stemmed_name = file_path.stem();
+
+        if (cli_params.filter.has_value() && stemmed_name == *cli_params.filter) {
+            OgrParams ogr_params = *cli_params.filter == cli_params.baseline_name ? cli_params.ogr_baseline_params : cli_params.ogr_algo_params;
+            ProcessImage(file_path, ogr_params, cli_params);
+            return 0;
+        }
+
+        if (stemmed_name == cli_params.baseline_name) {
+            baseline_path = std::move(file_path);
             continue;
         }
 
         algo_images_paths.emplace_back(std::move(file_path));
     }
 
-    ogr::OpticalGraphRecognition baseline_algo = ProcessImage(baseline_path, vertex, union_strategy, output_dir);
+    if (!FS::exists(baseline_path)) {
+        throw std::runtime_error{"Baseline not valid path"};
+    }
+
+    ogr::OpticalGraphRecognition baseline_algo = ProcessImage(baseline_path, cli_params.ogr_baseline_params, cli_params);
+
     std::vector<ogr::OpticalGraphRecognition> evaluated_algos;
     for (const auto& algo_image_path : algo_images_paths) {
-        evaluated_algos.emplace_back(ProcessImage(algo_image_path, vertex, union_strategy, output_dir));
+        evaluated_algos.emplace_back(ProcessImage(algo_image_path, cli_params.ogr_algo_params, cli_params));
     }
 
     ogr::MakeReport(baseline_algo, evaluated_algos);

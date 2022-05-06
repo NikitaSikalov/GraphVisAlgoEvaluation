@@ -51,6 +51,18 @@ namespace ogr {
             MakeGraphRecognitionMatrixFromCvMatrix(source_graph)) {
     }
 
+    void OpticalGraphRecognition::UpdateIncUsage(const cv::Mat &source_image) {
+        for (size_t row = 0; row < source_image.rows; ++row) {
+            for (size_t column = 0; column < source_image.cols; ++column) {
+                const cv::Point cv_point(column, row);
+                const uint8_t value = source_image.at<uint8_t>(cv_point);
+                if (value != 0) {
+                    inc_usage_++;
+                }
+            }
+        }
+    }
+
     void OpticalGraphRecognition::DetectVertexes(std::function<bool(point::PointPtr)> is_vertex) {
         LOG_DEBUG << "Detect vertexes process start";
 
@@ -319,8 +331,26 @@ namespace ogr {
             }
         });
 
+        iterator::Neighbourhood8 ngh;
+        std::set<size_t> invalid_crossings;
+
         for (point::PointPtr point : gluer.GetPoints()) {
-            crossing_areas_[gluer.GetGroupId(point)].push_back(point);
+            const size_t crossing_id = gluer.GetGroupId(point);
+            crossing_areas_[crossing_id].push_back(point);
+            for (const point::PointPtr neighbour : ngh(point, grm_)) {
+                if (point::IsVertexPoint(neighbour)) {
+                    invalid_crossings.insert(crossing_id);
+                }
+            }
+        }
+
+        // Erase crossing ares in neighbourhood of vertex
+        for (const size_t& crossing_id : invalid_crossings) {
+            for (point::PointPtr point : crossing_areas_[crossing_id]) {
+                point::EdgePointPtr edge_point = std::dynamic_pointer_cast<point::EdgePoint>(point);
+                edge_point->ResetCrossing();
+            }
+            crossing_areas_.erase(crossing_id);
         }
     }
 
@@ -357,11 +387,15 @@ namespace ogr {
 
         Table general_info;
         general_info.format().hide_border();
-        general_info.add_row({"Number of vertexes", std::to_string(vertexes_.size())});
-        general_info.add_row({"Number of edges", std::to_string(edges_.size())});
-        general_info.add_row({"Number of edge crossings", std::to_string(crossing_areas_.size())});
+        general_info.add_row({"Vertexes", std::to_string(vertexes_.size())});
+        general_info.add_row({"Edges", std::to_string(edges_.size())});
+        general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
 
         // TODO: remove crutch
+        general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
         general_info.add_row({"", ""});
         general_info.add_row({"", ""});
 
@@ -379,12 +413,21 @@ namespace ogr {
 
         Table general_info;
         general_info.format().hide_border();
-        general_info.add_row({"Number of vertexes", std::to_string(vertexes_.size())});
-        general_info.add_row({"Number of edges", std::to_string(edges_.size())});
-        general_info.add_row({"Number of edge crossings", std::to_string(crossing_areas_.size())});
+        general_info.add_row({"Vertexes", std::to_string(vertexes_.size())});
+        general_info.add_row({"Edges", std::to_string(edges_.size())});
+        general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
 
-        const size_t bundled_edges_cnt = bundling_map_.Size() - edges_.size();
-        general_info.add_row({"Number of bundled edges", std::to_string(bundled_edges_cnt)});
+        const double edge_crossings_diff = (static_cast<double>(crossing_areas_.size()) - baseline.crossing_areas_.size()) / baseline.crossing_areas_.size();
+        general_info.add_row({"Relative crossings diff", std::to_string(std::lround(edge_crossings_diff * 100)) + "%"});
+
+        const double inc_diff = (static_cast<double>(inc_usage_) - baseline.inc_usage_) / baseline.inc_usage_;
+        general_info.add_row({"Inc reduction", std::to_string(std::lround(inc_diff * 100)) + "%"});
+
+        const size_t bundled_pairs = bundling_map_.Size() - edges_.size();
+        general_info.add_row({"Bundled edge pairs", std::to_string(bundled_pairs)});
+
+        const double bundling_ratio = static_cast<double>(bundled_pairs) / (edges_.size() * edges_.size());
+        general_info.add_row({"Bundling ratio", std::to_string(std::lround(bundling_ratio * 100)) + "%"});
 
         size_t false_positive_connections = 0;
         for (const auto& [vid1, v1] : baseline.vertexes_) {
@@ -398,19 +441,22 @@ namespace ogr {
                 }
             }
         }
-        general_info.add_row({"Ambiguity (FP)", std::to_string(false_positive_connections)});
+        false_positive_connections /= 2;
+        general_info.add_row({"FP connections", std::to_string(false_positive_connections)});
+
+        const double ambiguity = static_cast<double>(false_positive_connections) / edges_.size();
+        general_info.add_row({"Ambiguity", std::to_string(std::lround(ambiguity * 100)) + "%"});
 
         results.add_row(Row_t{general_info});
 
         return results;
     }
 
-    tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title) {
+    tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title, OpticalGraphRecognition& baseline) {
         using namespace tabulate;
-        using Row_t = Table::Row_t;
 
         Table edges;
-        edges.add_row({"Edge ID", "Source", "Sink", "Edge length", "Bundled with"});
+        edges.add_row({"Edge ID", "Source", "Sink", "Edge length", "Type", "Bundled with"});
 
         auto edges_ids = GetEdgesIds();
         for (EdgeId edge_id : edges_ids) {
@@ -426,11 +472,14 @@ namespace ogr {
                 s_string.resize(s_string.size() - 2);
             }
 
+            const bool false_positive_edge = !baseline.adjacency_map_.Contains(edge->v1, edge->v2);
+
             edges.add_row({
                   std::to_string(edge_id),
                   std::to_string(edge->v1),
                   std::to_string(edge->v2),
                   std::to_string(edge_lengths_(edge_id, edge_id)),
+                  false_positive_edge ? "FP" : "TP",
                   s_string
             });
         }

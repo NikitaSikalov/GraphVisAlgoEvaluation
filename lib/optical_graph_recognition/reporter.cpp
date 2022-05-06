@@ -22,7 +22,7 @@ namespace ogr {
         std::vector<Row_t::value_type> general_algo_infos;
         general_algo_infos.emplace_back(baseline.GetGeneralData("Baseline algo"));
         for (size_t i = 0; i < algos.size(); ++i) {
-            const std::string title = std::string{"Algo "} + std::to_string(i);
+            const std::string title = std::string{"Bundling algo "} + std::to_string(i + 1);
             general_algo_infos.emplace_back(algos[i].GetExtendedGeneralData(title, baseline));
         }
 
@@ -37,10 +37,10 @@ namespace ogr {
 
         for (size_t i = 0; i < algos.size(); ++i) {
             std::stringstream ss;
-            ss << "Edges info for algo " << i;
+            ss << "Edges info for algo " << (i + 1);
             results.add_row({ss.str()});
             results[3 + i].format().hide_border_bottom().font_color(Color::cyan).font_style({FontStyle::italic});
-            results.add_row(Row_t{algos[i].GetEdgesInfo(ss.str())});
+            results.add_row(Row_t{algos[i].GetEdgesInfo(ss.str(), baseline)});
             results[3 + i + 1].format().hide_border_top();
         }
 

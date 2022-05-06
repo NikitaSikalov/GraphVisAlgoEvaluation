@@ -60,13 +60,24 @@ namespace ogr::opencv {
         const cv::Vec3b marked_point_color{33, 111, 255};
         const cv::Vec3b edge_point_color{63, 253, 255};
         const cv::Vec3b crossing_point_color{255, 133, 5};
+        const cv::Vec3b empty_point_color{0, 0, 0};
+
+        const cv::Vec3b dev_color{196, 13, 255};
 
         for (size_t row = 0; row < matrix::Rows(grm); ++row) {
             for (size_t col = 0; col < matrix::Columns(grm); ++col) {
                 const cv::Point cv_point(col, row);
                 const point::PointPtr point = point_filter(grm[row][col]);
+
+                // For dev
+                /*if (point::IsDevMarked(point)) {
+                    cv_image.at<cv::Vec3b>(cv_point) = dev_color;
+                } else */
+
                 if (ContainsPointInNeighbourhoodWithPredicate(point, grm, point::IsVertexPoint, point_filter)) {
                     cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
+                } else if (ContainsPointInNeighbourhoodWithPredicate(point, grm, point::IsCrossingPoint, point_filter)) {
+                    cv_image.at<cv::Vec3b>(cv_point) = crossing_point_color;
                 } else if (point::IsVertexPoint(point)) {
                     cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;
                 } else if (point::IsCrossingPoint(point)) {
@@ -77,6 +88,8 @@ namespace ogr::opencv {
                     cv_image.at<cv::Vec3b>(cv_point) = marked_point_color;
                 } else if (!point->IsEmpty()) {
                     cv_image.at<cv::Vec3b>(cv_point) = filled_point_color;
+                } else {
+                    cv_image.at<cv::Vec3b>(cv_point) = empty_point_color;
                 }
             }
         }

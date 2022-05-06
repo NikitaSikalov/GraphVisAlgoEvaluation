@@ -55,6 +55,7 @@ namespace ogr::crawler {
             LOG_DEBUG << "Add crawler with initial step: " << debug::DebugDump(*step);
 
             StepTreeNodePtr next_path_node = paths_tree->MakeChild(step);
+            point::DevMark(next_path_node->GetStep()->Back());
             crawlers.push(std::make_shared<EdgeCrawlerImpl>(grm, next_path_node));
         }
 
