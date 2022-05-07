@@ -80,6 +80,7 @@ Options:
 1. [sample1](./samples/1) => [result1](./results/1/report.txt)
 2. [sample2](./samples/2) => [result2](./results/2/report.txt)
 3. [sample3](./samples/3) => [result3](./results/3/report.txt)
+4. [sample4](./samples/4) => [result4](./results/4/report.txt)
 
 Below you can see visualization of algorithm implementation for finding edges from one particular vertex:
 
