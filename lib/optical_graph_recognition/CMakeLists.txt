@@ -12,6 +12,7 @@ add_library(ogr
         crawler/step_tree_node.cpp
         utils/debug.cpp
         utils/opencv_utils.cpp
+        stats/stats.cpp
         )
 
 target_link_libraries(ogr ${OpenCV_LIBS})

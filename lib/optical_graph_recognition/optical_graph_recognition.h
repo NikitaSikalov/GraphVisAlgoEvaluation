@@ -5,6 +5,7 @@
 #include <vertex/detectors.h>
 #include <utils/debug.h>
 #include <map/composite_map.h>
+#include <stats/stats.h>
 
 #include <opencv2/opencv.hpp>
 #include <tabulate/table.hpp>
@@ -37,7 +38,7 @@ namespace ogr {
         void BuildEdgeBundlingMap();
         void MarkCrossingsPoints();
 
-        void DumpResultImages(const std::filesystem::path& output_dir, std::optional<VertexId> vertex = std::nullopt);
+        void DumpResultImages(const std::filesystem::path& output_dir, bool dump_edges, std::optional<VertexId> vertex = std::nullopt);
         tabulate::Table GetGeneralData(const std::string& title);
         tabulate::Table GetExtendedGeneralData(const std::string& title, OpticalGraphRecognition& baseline);
         tabulate::Table GetEdgesInfo(const std::string& title, OpticalGraphRecognition& baseline);
@@ -52,7 +53,8 @@ namespace ogr {
         map::CompositeMap<size_t, EdgeId, EdgeId> edge_lengths_;
         map::CompositeMap<EdgeId, VertexId, VertexId> adjacency_map_;
 
-        size_t inc_usage_;
+        size_t inc_usage_{0};
+        stats::Stats edge_stats_;
 
     private:
         void DetectPortPoints();

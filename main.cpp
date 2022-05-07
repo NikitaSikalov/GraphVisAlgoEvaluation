@@ -25,6 +25,7 @@ struct OgrParams {
     double curvature;
     double stable_diff;
     double state_diff;
+    std::string union_strategy;
 };
 
 struct InputCliParams {
@@ -34,8 +35,8 @@ struct InputCliParams {
     std::string log_level;
     std::optional<ogr::VertexId> vertex;
     std::optional<std::string> filter;
-    std::string union_strategy;
     bool only_report;
+    bool dump_edges;
 
     OgrParams ogr_baseline_params;
     OgrParams ogr_algo_params;
@@ -76,16 +77,20 @@ ogr::OpticalGraphRecognition ProcessImage(const std::filesystem::path& input_img
     // Run algorithm of edges detecting
     ogr_algo.DetectEdges(input_params.vertex);
 
-    if (input_params.union_strategy == "union") {
+    if (ogr_params.union_strategy == "union") {
         ogr_algo.UnionFoundEdges();
-    } else {
+    } else if (ogr_params.union_strategy == "intersect") {
         ogr_algo.IntersectFoundEdges();
+    } else {
+        throw std::runtime_error{"Invalid edges-union params, only 'union' or 'intersect' allowed"};
     }
 
     // Step 4: Detect bundling
+    LOG_INFO << "Build edge bundling map";
     ogr_algo.BuildEdgeBundlingMap();
 
     // Step 5: Aesthetics evaluation
+    LOG_INFO << "Detect crossing points";
     ogr_algo.MarkCrossingsPoints();
 
     // Step 5: Print results
@@ -101,7 +106,7 @@ ogr::OpticalGraphRecognition ProcessImage(const std::filesystem::path& input_img
             FS::create_directory(output_dir);
         }
 
-        ogr_algo.DumpResultImages(output_dir, input_params.vertex);
+        ogr_algo.DumpResultImages(output_dir, input_params.dump_edges, input_params.vertex);
     }
 
     return ogr_algo;
@@ -147,6 +152,8 @@ int main(int argc, char* argv[]) {
         ->default_val(false);
     app.add_flag("--only-report", cli_params.only_report, "Show only report of algo evaluation")
         ->default_val(false);
+    app.add_flag("--dump-edges", cli_params.dump_edges, "Dump detected edges images")
+        ->default_val(false);
 
     // Ogr algo params
     auto* algo_input_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
@@ -168,7 +175,9 @@ int main(int argc, char* argv[]) {
         ->default_val(30.0);
 
     // Edges union/intersection strategy
-    algo_input_params->add_option("--edges-union", cli_params.union_strategy, "Union found edges strategy: union, intersection")
+    algo_input_params->add_option("--baseline-edges-union", cli_params.ogr_baseline_params.union_strategy, "Union found edges strategy: union, intersection (baseline)")
+        ->default_val("union");
+    algo_input_params->add_option("--edges-union", cli_params.ogr_algo_params.union_strategy, "Union found edges strategy: union, intersection")
         ->default_val("union");
 
     CLI11_PARSE(app, argc, argv);

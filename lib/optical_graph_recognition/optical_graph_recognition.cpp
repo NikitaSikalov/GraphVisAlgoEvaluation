@@ -249,7 +249,7 @@ namespace ogr {
         });
     }
 
-    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path& output_dir, std::optional<VertexId> filter_vertex) {
+    void OpticalGraphRecognition::DumpResultImages(const std::filesystem::path& output_dir, bool dump_edges, std::optional<VertexId> filter_vertex) {
         const std::string base_name = "vertex_";
         for (auto& [vid, vertex] : vertexes_) {
             if (filter_vertex.has_value() && vertex->id != *filter_vertex) {
@@ -263,20 +263,22 @@ namespace ogr {
             cv::imwrite(image_path, mat);
         }
 
-        const std::string edges_base_name = "edge_";
-        for (EdgeId eid : GetEdgesIds()) {
-            std::filesystem::path image_path = output_dir / (edges_base_name + std::to_string(eid) + ".png");
-            cv::Mat mat = opencv::Grm2CvMat(grm_, utils::EdgePointFilter{eid});
+        if (dump_edges) {
+            const std::string edges_base_name = "edge_";
+            for (EdgeId eid : GetEdgesIds()) {
+                std::filesystem::path image_path = output_dir / (edges_base_name + std::to_string(eid) + ".png");
+                cv::Mat mat = opencv::Grm2CvMat(grm_, utils::EdgePointFilter{eid});
 
-            LOG_INFO << "Dump edge image with id = " << eid;
+                LOG_INFO << "Dump edge image with id = " << eid;
+                cv::imwrite(image_path, mat);
+            }
+
+            const std::string full_name = "full";
+            std::filesystem::path image_path = output_dir / (full_name + ".png");
+            LOG_INFO << "Dump full image without filters";
+            cv::Mat mat = opencv::Grm2CvMat(grm_);
             cv::imwrite(image_path, mat);
         }
-
-        const std::string full_name = "full";
-        std::filesystem::path image_path = output_dir / (full_name + ".png");
-        LOG_INFO << "Dump full image without filters";
-        cv::Mat mat = opencv::Grm2CvMat(grm_);
-        cv::imwrite(image_path, mat);
     }
 
     void OpticalGraphRecognition::BuildEdgeBundlingMap() {
@@ -294,9 +296,18 @@ namespace ogr {
         for (auto [_, edge_ptr] : edges_) {
             ProcessSingleEdgeLength(edge_ptr);
         }
+
+        std::vector<double> edges_lens;
+        for (auto eid : GetEdgesIds()) {
+            edges_lens.emplace_back(edge_lengths_(eid, eid));
+        }
+
+        edge_stats_ = stats::CalculateStats(edges_lens);
     }
 
     void OpticalGraphRecognition::ProcessSingleEdgeLength(EdgePtr edge) {
+        LOG_INFO << "Process edge length for edge = " << edge->id;
+
         static constexpr size_t kResetMapDecoratorThreshold = 3;
 
         map::ResetMapDecorator<kResetMapDecoratorThreshold, size_t, EdgeId, EdgeId> lengths(map::CompositeMap<size_t, EdgeId, EdgeId>{});
@@ -398,6 +409,8 @@ namespace ogr {
         general_info.add_row({"", ""});
         general_info.add_row({"", ""});
         general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
+        general_info.add_row({"", ""});
 
         results.add_row(Row_t{general_info});
 
@@ -408,6 +421,18 @@ namespace ogr {
         using namespace tabulate;
         using Row_t = Table::Row_t;
 
+        auto to_sting_diff = [](auto x) {
+            if (x > 0) {
+                return std::string{"+"} + std::to_string(std::lround(x));
+            }
+
+            return std::to_string(std::lround(x));
+        };
+
+        auto calculate_diff_ratio = [](double x, double y) {
+            return (x - y) / y;
+        };
+
         Table results;
         results.add_row({title});
 
@@ -417,17 +442,23 @@ namespace ogr {
         general_info.add_row({"Edges", std::to_string(edges_.size())});
         general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
 
-        const double edge_crossings_diff = (static_cast<double>(crossing_areas_.size()) - baseline.crossing_areas_.size()) / baseline.crossing_areas_.size();
-        general_info.add_row({"Relative crossings diff", std::to_string(std::lround(edge_crossings_diff * 100)) + "%"});
-
-        const double inc_diff = (static_cast<double>(inc_usage_) - baseline.inc_usage_) / baseline.inc_usage_;
-        general_info.add_row({"Inc reduction", std::to_string(std::lround(inc_diff * 100)) + "%"});
-
         const size_t bundled_pairs = bundling_map_.Size() - edges_.size();
         general_info.add_row({"Bundled edge pairs", std::to_string(bundled_pairs)});
 
         const double bundling_ratio = static_cast<double>(bundled_pairs) / (edges_.size() * edges_.size());
         general_info.add_row({"Bundling ratio", std::to_string(std::lround(bundling_ratio * 100)) + "%"});
+
+        const double edge_len_diff = calculate_diff_ratio(edge_stats_.mean, baseline.edge_stats_.mean);
+        general_info.add_row({"Edge len mean", to_sting_diff(edge_len_diff * 100) + "%"});
+
+        const double edge_var_diff = calculate_diff_ratio(edge_stats_.var, baseline.edge_stats_.var);
+        general_info.add_row({"Edge len var", to_sting_diff(edge_var_diff * 100) + "%"});
+
+        const double edge_crossings_diff = calculate_diff_ratio(crossing_areas_.size(), baseline.crossing_areas_.size());
+        general_info.add_row({"Crossings", to_sting_diff(edge_crossings_diff * 100) + "%"});
+
+        const double inc_diff = calculate_diff_ratio(inc_usage_, baseline.inc_usage_);
+        general_info.add_row({"Inc", to_sting_diff(inc_diff * 100) + "%"});
 
         size_t false_positive_connections = 0;
         for (const auto& [vid1, v1] : baseline.vertexes_) {
@@ -454,6 +485,7 @@ namespace ogr {
 
     tabulate::Table OpticalGraphRecognition::GetEdgesInfo(const std::string &title, OpticalGraphRecognition& baseline) {
         using namespace tabulate;
+        static constexpr size_t kLimitBundlingOutput = 7;
 
         Table edges;
         edges.add_row({"Edge ID", "Source", "Sink", "Edge length", "Type", "Bundled with"});
@@ -462,11 +494,19 @@ namespace ogr {
         for (EdgeId edge_id : edges_ids) {
             const EdgePtr& edge = edges_[edge_id];
             std::stringstream ss;
+
+            size_t counter = 0;
             for (EdgeId j : edges_ids) {
                 if (bundling_map_.Contains(edge_id, j) && j != edge_id) {
+                    if (++counter >= kLimitBundlingOutput) {
+                        ss << "..." << ", ";
+                        break;
+                    }
+
                     ss << j << ", ";
                 }
             }
+
             std::string s_string = ss.str();
             if (!s_string.empty()) {
                 s_string.resize(s_string.size() - 2);
