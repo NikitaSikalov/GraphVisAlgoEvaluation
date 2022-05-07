@@ -70,9 +70,9 @@ namespace ogr::opencv {
                 const point::PointPtr point = point_filter(grm[row][col]);
 
                 // For dev
-                /*if (point::IsDevMarked(point)) {
-                    cv_image.at<cv::Vec3b>(cv_point) = dev_color;
-                } else */
+//                if (point::IsDevMarked(point)) {
+//                    cv_image.at<cv::Vec3b>(cv_point) = dev_color;
+//                } else
 
                 if (ContainsPointInNeighbourhoodWithPredicate(point, grm, point::IsVertexPoint, point_filter)) {
                     cv_image.at<cv::Vec3b>(cv_point) = vertex_point_color;

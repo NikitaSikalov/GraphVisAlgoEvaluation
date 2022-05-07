@@ -35,6 +35,7 @@ struct InputCliParams {
     std::optional<ogr::VertexId> vertex;
     std::optional<std::string> filter;
     std::string union_strategy;
+    bool only_report;
 
     OgrParams ogr_baseline_params;
     OgrParams ogr_algo_params;
@@ -93,12 +94,15 @@ ogr::OpticalGraphRecognition ProcessImage(const std::filesystem::path& input_img
     //    if (!ogr::debug::DevDirPath.empty()) {
     //        output_dir = std::filesystem::path(ogr::debug::DevDirPath);
     //    }
-    Fpath output_dir = input_params.output_dir / input_img.stem();
-    if (!FS::exists(output_dir)) {
-        FS::create_directory(output_dir);
-    }
 
-    ogr_algo.DumpResultImages(output_dir, input_params.vertex);
+    if (!input_params.only_report) {
+        Fpath output_dir = input_params.output_dir / input_img.stem();
+        if (!FS::exists(output_dir)) {
+            FS::create_directory(output_dir);
+        }
+
+        ogr_algo.DumpResultImages(output_dir, input_params.vertex);
+    }
 
     return ogr_algo;
 }
@@ -141,6 +145,8 @@ int main(int argc, char* argv[]) {
         ->default_val(std::nullopt);
     app.add_flag("--dump-intermediate", ogr::debug::DumpIntermediateResults)
         ->default_val(false);
+    app.add_flag("--only-report", cli_params.only_report, "Show only report of algo evaluation")
+        ->default_val(false);
 
     // Ogr algo params
     auto* algo_input_params = app.add_option_group("Algo params", "Parameters of ogr algorithm");
@@ -167,7 +173,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
+    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender{plog::OutputStream::streamStdErr};
 
     if (cli_params.log_level == "debug") {
         plog::init(plog::debug, &consoleAppender);
