@@ -2,19 +2,21 @@
 |                           Aesthetics metrics of bundling graph evaluation                          |
 +----------------------------------------------------------------------------------------------------+
 |                                 Algorithms visualization comparison                                |
-|                    +----------------------+  +---------------------------------+                   |
-|                    | Baseline algo        |  | Bundling algo 1                 |                   |
-|                    +----------------------+  +---------------------------------+                   |
-|                    | Vertexes        12   |  | Vertexes                 12     |                   |
-|                    | Edges           22   |  | Edges                    21     |                   |
-|                    | Edge crossings  24   |  | Edge crossings           22     |                   |
-|                    |                      |  | Relative crossings diff  -8%    |                   |
-|                    |                      |  | Inc reduction            -29%   |                   |
-|                    |                      |  | Bundled edge pairs       25     |                   |
-|                    |                      |  | Bundling ratio           6%     |                   |
-|                    |                      |  | FP connections           2      |                   |
-|                    |                      |  | Ambiguity                10%    |                   |
-|                    +----------------------+  +---------------------------------+                   |
+|                       +----------------------+  +---------------------------+                      |
+|                       | Baseline algo        |  | Bundling algo 1           |                      |
+|                       +----------------------+  +---------------------------+                      |
+|                       | Vertexes        12   |  | Vertexes            12    |                      |
+|                       | Edges           22   |  | Edges               21    |                      |
+|                       | Edge crossings  24   |  | Edge crossings      22    |                      |
+|                       |                      |  | Bundled edge pairs  25    |                      |
+|                       |                      |  | Bundling ratio      6%    |                      |
+|                       |                      |  | Edge len mean       +8%   |                      |
+|                       |                      |  | Edge len var        +7%   |                      |
+|                       |                      |  | Crossings           -8%   |                      |
+|                       |                      |  | Inc                 0%    |                      |
+|                       |                      |  | FP connections      2     |                      |
+|                       |                      |  | Ambiguity           10%   |                      |
+|                       +----------------------+  +---------------------------+                      |
 +----------------------------------------------------------------------------------------------------+
 |                                        Edges info for algo 1                                       |
 |                +---------+--------+------+-------------+------+-------------------+                |
