@@ -10,7 +10,7 @@
 |                                      | Edges           18             |  | Edges               21             |                                      |
 |                                      | Edge crossings  40             |  | Edge crossings      39             |                                      |
 |                                      |                                |  | Bundled edge pairs  32             |                                      |
-|                                      |                                |  | Bundling ratio      7%             |                                      |
+|                                      |                                |  | Bundling ratio      15%            |                                      |
 |                                      |                                |  | Edge len mean       +5%            |                                      |
 |                                      |                                |  | Edge len var        -2%            |                                      |
 |                                      |                                |  | Crossings           -3%            |                                      |

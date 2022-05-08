@@ -70,8 +70,7 @@ sample5: build
 dev: build
 	LOG_LEVEL=info $(call exe_template,4,--filter baseline --edges-union intersect)
 
-all-reports: sample1-report sample2-report sample3-report sample4-report
-
-all: sample1 sample2 sample3 sample4
+reports: sample1-report sample2-report sample3-report sample4-report sample5-report
+samples: sample1 sample2 sample3 sample4 sample5
 
 
