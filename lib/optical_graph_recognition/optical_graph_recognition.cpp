@@ -447,9 +447,10 @@ namespace ogr {
         general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
 
         const size_t bundled_pairs = bundling_map_.Size() - edges_.size();
+        const size_t unique_edge_pairs_cnt = (edges_.size() * (edges_.size() - 1)) / 2;
         general_info.add_row({"Bundled edge pairs", std::to_string(bundled_pairs)});
 
-        const double bundling_ratio = static_cast<double>(bundled_pairs) / (edges_.size() * edges_.size());
+        const double bundling_ratio = static_cast<double>(bundled_pairs) / unique_edge_pairs_cnt;
         general_info.add_row({"Bundling ratio", std::to_string(std::lround(bundling_ratio * 100)) + "%"});
 
         const double edge_len_diff = calculate_diff_ratio(edge_stats_.mean, baseline.edge_stats_.mean);

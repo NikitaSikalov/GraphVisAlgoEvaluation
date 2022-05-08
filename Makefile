@@ -54,6 +54,17 @@ sample4: build
 	$(call clean_results,4)
 	LOG_LEVEL=info $(call exe_template,4,$(sample4_params))
 
+# Sample 5 ========================================
+
+sample5_params = --state-diff 40 --stable-diff 40 --curvature 40
+
+sample5-report: build
+	LOG_LEVEL=info $(call report,5,$(sample5_params))
+
+sample5: build
+	$(call clean_results,4)
+	LOG_LEVEL=info $(call exe_template,5,$(sample5_params))
+
 # Dev ==============================================
 
 dev: build
