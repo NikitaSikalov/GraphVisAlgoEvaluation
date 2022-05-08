@@ -12,7 +12,7 @@ namespace ogr {
 
         Table results;
         results.add_row({"Aesthetics metrics of bundling graph evaluation"}).format()
-                .width(100).font_align(FontAlign::center);
+                .width(150).font_align(FontAlign::center);
 
         results[0].format()
                 .font_color(Color::green)
@@ -39,9 +39,9 @@ namespace ogr {
             std::stringstream ss;
             ss << "Edges info for algo " << (i + 1);
             results.add_row({ss.str()});
-            results[3 + i].format().hide_border_bottom().font_color(Color::cyan).font_style({FontStyle::italic});
+            results[3 + i * 2].format().hide_border_bottom().font_color(Color::cyan).font_style({FontStyle::italic});
             results.add_row(Row_t{algos[i].GetEdgesInfo(ss.str(), baseline)});
-            results[3 + i + 1].format().hide_border_top();
+            results[3 + i * 2 + 1].format().hide_border_top();
         }
 
         std::cout << results << std::endl;

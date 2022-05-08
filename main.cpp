@@ -62,7 +62,7 @@ ogr::OpticalGraphRecognition ProcessImage(const std::filesystem::path& input_img
     ogr::kStableStateAngleDiffThreshold = ogr_params.stable_diff;
     ogr::kAngleDiffThreshold = ogr_params.state_diff;
 
-    ogr::OpticalGraphRecognition ogr_algo{thinning_image};
+    ogr::OpticalGraphRecognition ogr_algo{thinning_image, input_img.filename()};
     ogr_algo.UpdateIncUsage(colored_image);
 
     LOG_INFO << "Optical graph recognition initialized";

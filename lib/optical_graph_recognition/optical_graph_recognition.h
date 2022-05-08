@@ -26,7 +26,7 @@ namespace ogr {
 
     class OpticalGraphRecognition {
     public:
-        explicit OpticalGraphRecognition(const cv::Mat& source_graph);
+        explicit OpticalGraphRecognition(const cv::Mat& source_graph, const std::string& filename = "");
 
         void UpdateIncUsage(const cv::Mat& source_image);
 
@@ -55,6 +55,7 @@ namespace ogr {
 
         size_t inc_usage_{0};
         stats::Stats edge_stats_;
+        std::string filename_;
 
     private:
         void DetectPortPoints();

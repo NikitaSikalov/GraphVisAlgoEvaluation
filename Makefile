@@ -18,7 +18,7 @@ build: $(shell find lib -type f) main.cpp
 sample1-report: build
 	LOG_LEVEL=info $(call report,1)
 
-sample1: build sample1-report
+sample1: build
 	$(call clean_results,1)
 	LOG_LEVEL=info $(call exe_template,1,--dump-edges)
 
@@ -28,7 +28,7 @@ sample1: build sample1-report
 sample2-report: build
 	LOG_LEVEL=info $(call report,2)
 
-sample2: build sample2-report
+sample2: build
 	$(call clean_results,2)
 	LOG_LEVEL=info $(call exe_template,2,--dump-edges)
 
@@ -38,19 +38,20 @@ sample2: build sample2-report
 sample3-report: build
 	LOG_LEVEL=info $(call report,3,--stable-diff 40)
 
-sample3: build sample3-report
+sample3: build
 	$(call clean_results,3)
 	LOG_LEVEL=info $(call exe_template,3,--stable-diff 40 --dump-edges)
 
 
 # Sample 4 ========================================
 
-sample4_params = --baseline-edges-union intersect --state-diff 30 --stable-diff 30
+sample4_params = --baseline-edges-union intersect --state-diff 20 --stable-diff 20 --curvature 20
 
 sample4-report: build
 	LOG_LEVEL=info $(call report,4,$(sample4_params))
 
-sample4: build sample4-report
+sample4: build
+	$(call clean_results,4)
 	LOG_LEVEL=info $(call exe_template,4,$(sample4_params))
 
 # Dev ==============================================

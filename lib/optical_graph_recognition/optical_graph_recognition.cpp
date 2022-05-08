@@ -47,8 +47,9 @@ namespace ogr {
         }
     }
 
-    OpticalGraphRecognition::OpticalGraphRecognition(const cv::Mat &source_graph) : grm_(
-            MakeGraphRecognitionMatrixFromCvMatrix(source_graph)) {
+    OpticalGraphRecognition::OpticalGraphRecognition(const cv::Mat &source_graph, const std::string& filename)
+        : grm_(MakeGraphRecognitionMatrixFromCvMatrix(source_graph))
+        , filename_(filename) {
     }
 
     void OpticalGraphRecognition::UpdateIncUsage(const cv::Mat &source_image) {
@@ -272,13 +273,14 @@ namespace ogr {
                 LOG_INFO << "Dump edge image with id = " << eid;
                 cv::imwrite(image_path, mat);
             }
-
-            const std::string full_name = "full";
-            std::filesystem::path image_path = output_dir / (full_name + ".png");
-            LOG_INFO << "Dump full image without filters";
-            cv::Mat mat = opencv::Grm2CvMat(grm_);
-            cv::imwrite(image_path, mat);
         }
+
+        const std::string full_name = "full";
+        std::filesystem::path image_path = output_dir / (full_name + ".png");
+
+        LOG_INFO << "Dump full image without filters";
+        cv::Mat mat = opencv::Grm2CvMat(grm_);
+        cv::imwrite(image_path, mat);
     }
 
     void OpticalGraphRecognition::BuildEdgeBundlingMap() {
@@ -398,6 +400,7 @@ namespace ogr {
 
         Table general_info;
         general_info.format().hide_border();
+        general_info.add_row({"Filename", filename_});
         general_info.add_row({"Vertexes", std::to_string(vertexes_.size())});
         general_info.add_row({"Edges", std::to_string(edges_.size())});
         general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
@@ -438,6 +441,7 @@ namespace ogr {
 
         Table general_info;
         general_info.format().hide_border();
+        general_info.add_row({"Filename", filename_});
         general_info.add_row({"Vertexes", std::to_string(vertexes_.size())});
         general_info.add_row({"Edges", std::to_string(edges_.size())});
         general_info.add_row({"Edge crossings", std::to_string(crossing_areas_.size())});
